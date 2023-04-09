@@ -4,7 +4,7 @@ A platform to generate gpt-enabled chatbots trained on given web content.
 
 ## Design Overview
 
-![architecture img](./img/architecture.png)
+![architecture img](./img/arch.png)
 
 ### Pages
 - **Landing page** with introduction, usage details and general information.

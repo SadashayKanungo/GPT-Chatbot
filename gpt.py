@@ -11,7 +11,7 @@ from langchain.prompts.prompt import PromptTemplate
 from langchain.llms import OpenAI
 from langchain.chains import ChatVectorDBChain
 
-OPENAI_API_KEY = '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'
+OPENAI_API_KEY = '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'
 
 def extract_text_from(url):
     html = requests.get(url).text
@@ -60,16 +60,12 @@ class QAchain:
 
     QA_TEMPLATE = """You are an AI assistant for answering questions about Search Engine Optimization Services
     and technical blog posts. You are given the following extracted parts of 
-    a long document and a question. Provide a conversational answer.
-    If you don't know the answer, just say "Hmm, I'm not sure.".
-    Don't try to make up an answer. If the question is not about
-    SEO or technical topics, politely inform them that you are tuned
-    to only answer questions about SEO and technical topics.
+    a long document and a question.
     Question: {question}
     =========
     {context}
     =========
-    Answer in Markdown:"""
+    Answer :"""
     
     CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(CONDENSE_TEMPLATE)
     QA_PROMPT = PromptTemplate(template=QA_TEMPLATE, input_variables=["question", "context"])
@@ -77,8 +73,13 @@ class QAchain:
     def __init__(self, filename):
         with open(filename, "rb") as f:
             vectorstore = pickle.load(f)
-        llm = OpenAI(temperature=0)
-        self.qa_chain = ChatVectorDBChain.from_llm(llm, vectorstore, qa_prompt=QA_PROMPT, condense_question_prompt=CONDENSE_QUESTION_PROMPT)
+        llm = OpenAI(temperature=0, model_name='gpt-3.5-turbo', max_tokens = 512, openai_api_key=OPENAI_API_KEY)
+        self.qa_chain = ChatVectorDBChain.from_llm(
+            llm, 
+            vectorstore, 
+            qa_prompt = self.QA_PROMPT, 
+            condense_question_prompt = self.CONDENSE_QUESTION_PROMPT,
+        )
         self.chat_history = []
     
     def ask(self, question):

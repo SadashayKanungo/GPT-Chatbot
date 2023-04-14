@@ -43,12 +43,8 @@ def create_embeddings(sitemap_url, domain_name):
         print(f"Split {page['source']} into {len(splits)} chunks")
     
     store = FAISS.from_texts(docs, OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY), metadatas=metadatas)
-    
-    filename = f"{''.join(c for c in domain_name if c.isalnum())}_{int(time.time())}.pkl"
-    with open(filename, "wb") as f:
-        pickle.dump(store, f)
-    
-    return filename
+    data = pickle.dumps(store)
+    return data
 
 class QAchain:
     CONDENSE_TEMPLATE = """Given the following conversation and a follow up question, 
@@ -70,9 +66,8 @@ class QAchain:
     CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(CONDENSE_TEMPLATE)
     QA_PROMPT = PromptTemplate(template=QA_TEMPLATE, input_variables=["question", "context"])
     
-    def __init__(self, filename):
-        with open(filename, "rb") as f:
-            vectorstore = pickle.load(f)
+    def __init__(self, data):
+        vectorstore = pickle.loads(data)
         llm = OpenAI(temperature=0, model_name='gpt-3.5-turbo', max_tokens = 512, openai_api_key=OPENAI_API_KEY)
         self.qa_chain = ChatVectorDBChain.from_llm(
             llm, 
@@ -81,8 +76,12 @@ class QAchain:
             condense_question_prompt = self.CONDENSE_QUESTION_PROMPT,
         )
         self.chat_history = []
+        print("QA Chain Started")
     
     def ask(self, question):
         result = self.qa_chain({"question": question, "chat_history": self.chat_history})
         self.chat_history.append((question, result["answer"]))
         return result
+    
+    def __del__(self):
+        print("QA Chain Closed")

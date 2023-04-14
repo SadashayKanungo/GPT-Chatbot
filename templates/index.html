@@ -12,8 +12,14 @@
         <h1>GPT-Chatbot</h1>
         <br>
         <form method="POST" action="/newbot">
-            <label for="url">Enter URL of Sitemap : </label>
+            <label for="name">Chatbot Name : </label>
+            <input type="text" name="name" required>
+            <br>
+            <label for="url">URL of Sitemap : </label>
             <input type="url" name="url" required>
+            <br>
+            <label for="domain">Domain name : </label>
+            <input type="text" name="domain" required>
             <br>
             <button type="submit">Submit</button>
         </form>

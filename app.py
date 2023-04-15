@@ -6,10 +6,14 @@ from bson.objectid import ObjectId
 from gpt import create_embeddings, QAchain
 
 script_response = """
+    <button id="chat-button" onclick="open_chatbox()"></button>
+    <iframe src="https://localhost:5000/chatbot" id="chat-widget" </iframe>
     <script>
-        window.gpt_chatbot_id={}
+        window.gpt_chatbot_id="CHATBOT_ID"
+        function open_chatbox(){
+            console.log("Open Chatbox");
+        }
     </script>
-    <iframe src="https://localhost:5000/bot" id="chat-widget" </iframe>
 """
 
 running_chains = dict()
@@ -40,7 +44,7 @@ def generate_new_bot():
         'pkl_id': pkl_id 
     }
     result = db.chatbots.insert_one(new_bot)
-    return script_response.format(result.inserted_id)
+    return script_response.replace("CHATBOT_ID",str(result.inserted_id))
 
 @app.route('/bot/start', methods=['GET'])
 def start_chatbot():

@@ -3,12 +3,14 @@ import React from 'react';
 import axios from 'axios';
 
 // const ASK_URL = window.gpt_chatbot.ask_url;
-const ASK_URL = `http://localhost:5000/bot/ask?id=643c888f0722a1dde9026961`;
+// const qa_chain_id = window.gpt_chatbot.qa_chain_id;
+const ASK_URL = `http://localhost:5000/bot/ask`;
+const qa_chain_id = '643d710e1c654a5c94ac9fa11681751555';
 
 const ActionProvider = ({ createChatBotMessage, setState, children }) => {
   const handleQuery = async (question) => {
     try {
-      const {data} = await axios.post(ASK_URL, {question});
+      const {data} = await axios.post(ASK_URL, {question, qa_chain_id});
       const botMessage = createChatBotMessage(data.answer);
       
       setState((prev) => ({

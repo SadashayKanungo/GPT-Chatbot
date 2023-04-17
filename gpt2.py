@@ -9,9 +9,9 @@ import time
 OPENAI_API_KEY = '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'
 embed_model = "text-embedding-ada-002"
 
-PINECONE_API_KEY = 'd9f2c337-2ad5-478e-b2a7-233a80f18a90'
-PINECONE_ENVIRONMENT = 'asia-southeast1-gcp'
-index_name = 'gpt-chatbot'
+PINECONE_API_KEY = 'cf212d98-5dca-4520-b59c-3159584c5ea8'
+PINECONE_ENVIRONMENT = 'us-west4-gcp'
+index_name = 'openai-youtube-transcriptions'
 
 openai.api_key = OPENAI_API_KEY
 pinecone.init(
@@ -94,25 +94,25 @@ def create_embeddings(sitemap_url, domain_name):
     print(new_namespace, "Upload successful")
     return new_namespace
 
+def llm_complete(prompt):
+    res = openai.Completion.create(
+        engine='text-davinci-003',
+        prompt=prompt,
+        temperature=0,
+        max_tokens=512,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+        stop=None
+    )
+    return res['choices'][0]['text'].strip()
+
 class QAchain:
     def __init__(self, namespace):
         self.chat_history = []
         self.index = index
         self.namespace = namespace
         print("QA Chain Started")
-
-    def llm_complete(prompt):
-        res = openai.Completion.create(
-            engine='gpt-3.5-turbo',
-            prompt=prompt,
-            temperature=0,
-            max_tokens=512,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            stop=None
-        )
-        return res['choices'][0]['text'].strip()
 
     def pinecone_query(self,query):
         embeds = openai.Embedding.create(
@@ -135,10 +135,12 @@ class QAchain:
             Chat History: {history}
             Follow Up Input: {qn}
             Standalone question:"""
-        return self.llm_complete(prompt)
+        return llm_complete(prompt)
 
     def add_context(self,qn):
+        limit = 512
         contexts = self.pinecone_query(qn)
+        # print("PINECONE RESULT", contexts)
         # build our prompt with the retrieved contexts included
         prompt_start = (
             "Answer the question based on the context below.\n\n"+
@@ -165,10 +167,14 @@ class QAchain:
         return prompt
     
     def ask(self, qn):
-        qn_with_history = self.condense_history(qn)
-        qn_with_context = self.add_context(qn_with_context)
-        result = self.llm_complete(qn_with_context)
-        self.chat_history.append((qn, result))
+        print(self.chat_history)
+        qn_with_history = self.condense_history(qn) if len(self.chat_history)>0 else qn
+        print(qn_with_history)
+        qn_with_context = self.add_context(qn_with_history)
+        print(qn_with_context)
+        result = llm_complete(qn_with_context)
+        self.chat_history.append(qn)
+        self.chat_history.append(result)
         return result
     
     def __del__(self):

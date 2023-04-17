@@ -1,11 +1,11 @@
-from gpt import create_embeddings, QAchain
+from gpt2 import create_embeddings, QAchain
 
 sitemap_url = 'https://victoriousseo.com/page-sitemap.xml'
-domain_name = 'https://victoriousseo.com/services'
+domain_name = 'victoriousseo.com/services'
 
-index_name = create_embeddings(sitemap_url, domain_name)
+namespace = create_embeddings(sitemap_url, domain_name)
 
-qa = QAchain(index_name)
+qa = QAchain(namespace)
 
 print("Start Chat")
 while True:

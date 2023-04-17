@@ -1,17 +1,33 @@
 import openai
 from tqdm.auto import tqdm
-import time
 import pinecone
+import requests
+import xmltodict
+from bs4 import BeautifulSoup
+import time
 
-OPENAI_API_KEY = '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'
-PINECONE_API_KEY = ''
-PINECONE_ENVIRONMENT = ''
+OPENAI_API_KEY = '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'
+embed_model = "text-embedding-ada-002"
+
+PINECONE_API_KEY = 'd9f2c337-2ad5-478e-b2a7-233a80f18a90'
+PINECONE_ENVIRONMENT = 'asia-southeast1-gcp'
+index_name = 'gpt-chatbot'
 
 openai.api_key = OPENAI_API_KEY
 pinecone.init(
     api_key=PINECONE_API_KEY,
     environment=PINECONE_ENVIRONMENT
 )
+# check if index already exists (it shouldn't if this is first time)
+if index_name not in pinecone.list_indexes():
+    # if does not exist, create index
+    pinecone.create_index(
+        index_name,
+        dimension=1563,
+        metric='cosine',
+        metadata_config={'indexed': ['source']}
+    )
+index = pinecone.Index(index_name)
 
 def extract_text_from(url):
     html = requests.get(url).text
@@ -27,7 +43,8 @@ def prepare_data_entry(url):
         'text': extract_text_from(url)
     }    
 
-def pinecone_upsert(data):
+def pinecone_upsert(data, domain_name):
+    new_namespace = ''.join([c for c in domain_name if c.isalnum()]) + str(int(time.time()))
     batch_size = 100  # how many embeddings we create and insert at once
     for i in tqdm(range(0, len(data), batch_size)):
         # find end of batch
@@ -48,7 +65,7 @@ def pinecone_upsert(data):
                     res = openai.Embedding.create(input=texts, engine=embed_model)
                     done = True
                 except:
-                    pass
+                    print("Embedding Failed")
         embeds = [record['embedding'] for record in res['data']]
         # cleanup metadata
         meta_batch = [{
@@ -56,21 +73,9 @@ def pinecone_upsert(data):
             'text': x['text'],
         } for x in meta_batch]
         to_upsert = list(zip(sources_batch, embeds, meta_batch))
+        index.upsert(vectors=to_upsert, namespace=new_namespace)
         
-        # upsert to Pinecone
-        index_name = ''.join([c for c in domain_name if c.isalnum()]) + str(int(time.time()))
-        # check if index already exists (it shouldn't if this is first time)
-        if index_name not in pinecone.list_indexes():
-            # if does not exist, create index
-            pinecone.create_index(
-                index_name,
-                dimension=len(res['data'][0]['embedding']),
-                metric='cosine',
-                metadata_config={'indexed': ['source']}
-            )
-        index = pinecone.Index(index_name)
-        index.upsert(vectors=to_upsert)
-        return index_name
+    return new_namespace
 
 def create_embeddings(sitemap_url, domain_name):
     # returns Pickle filename
@@ -85,15 +90,15 @@ def create_embeddings(sitemap_url, domain_name):
         if domain_name in url:
             pages.append(prepare_data_entry(url))
     
-    new_index_name = pinecone_upsert(pages)
-    return new_index_name
-
-    
+    new_namespace = pinecone_upsert(pages, domain_name)
+    print(new_namespace, "Upload successful")
+    return new_namespace
 
 class QAchain:
-    def __init__(self, index_name):
+    def __init__(self, namespace):
         self.chat_history = []
-        self.index = pinecone.Index(index_name)
+        self.index = index
+        self.namespace = namespace
         print("QA Chain Started")
 
     def llm_complete(prompt):
@@ -117,7 +122,7 @@ class QAchain:
         # retrieve from Pinecone
         xq = embeds['data'][0]['embedding']
         # get relevant vectors
-        res = self.index.query(xq, top_k=4, include_metadata=True)
+        res = self.index.query(xq, top_k=4, include_metadata=True, namespace=self.namespace)
         contexts = [
             x['metadata']['text'] for x in res['matches']
         ]

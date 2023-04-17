@@ -11,7 +11,7 @@ from langchain.prompts.prompt import PromptTemplate
 from langchain.llms import OpenAI
 from langchain.chains import ChatVectorDBChain
 
-OPENAI_API_KEY = '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'
+OPENAI_API_KEY = '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'
 
 def extract_text_from(url):
     html = requests.get(url).text

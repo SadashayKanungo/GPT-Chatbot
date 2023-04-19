@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="card-wrapper">
+
+    <div class="navbar">
+
+      <h2 class="center">&#128100; {{ user['name'] }}</h2>
+
+      <h1>Dashboard</h1>
+
+      
+
+      <div class="right">
+        <a href="/user/signout" class="navbtn btn--secondary">Sign Out</a>
+      </div>
+    
+    </div>
+
+    <div class="card-list">
+      <h3 class="center">Your Bots</h3>
+
+      {% for bot in bots %}
+        <div class="bot-card">
+          <p>
+            Chatbot Name : <strong> {{ bot['name'] }} </strong><br>
+            URL of Sitemap : <strong> {{ bot['sitemap_url'] }} </strong><br>
+            Domain name : <strong> {{ bot['sitemap_url'] }} </strong><br><br>
+            Script :
+            <div class="code"><code>{{ bot['script'] }}</code></div>
+          </p>
+        </div>
+      {% endfor %}    
+    </div>
+
+    <div class="card-list">
+      <h3 class="center">Create New Chatbot</h3>
+      <form name="newbot_form">
+          <input type="hidden" name="csrf_token" value={{csrf_token}}>
+
+          <label for="name">Chatbot Name : </label>
+          <input class="field" type="text" name="name" required>
+          <br>
+          <label for="url">URL of Sitemap : </label>
+          <input class="field" type="url" name="url" required>
+          <br>
+          <label for="domain">Domain name : </label>
+          <input class="field" type="text" name="domain" required>
+          <br>
+          <input type="submit" value="Submit" class="btn">
+          <p class="error error--hidden"></p>
+      </form>
+    
+    </div>
+  
+  </div>
+{% endblock %}

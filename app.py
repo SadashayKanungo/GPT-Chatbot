@@ -124,7 +124,8 @@ def get_script(filename):
 def get_script_response(bot_id, base_url):
     script_response = '<script src="CHATBOT_SCRIPT_URL" id="CHATBOT_ID"></script>'
     script_response = script_response.replace("CHATBOT_ID",bot_id)
-    script_response = script_response.replace("CHATBOT_SCRIPT_URL", f'{base_url}script/{CHATBOT_SCRIPT_FILE}')
+    script_file = app.config['CHATBOT_SCRIPT_FILE']
+    script_response = script_response.replace("CHATBOT_SCRIPT_URL", f'{base_url}cdn/{script_file}')
     return script_response
 
 # Bot Functioning Routes

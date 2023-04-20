@@ -20,42 +20,7 @@ chatButton.style.cursor = 'pointer'
 chatButton.style.zIndex = 999999998
 chatButton.style.transition = 'all .2s ease-in-out'
 
-const messageBubbles = document.createElement('div')
-messageBubbles.setAttribute('id', 'chatbase-message-bubbles')
-messageBubbles.style.position = 'fixed'
-messageBubbles.style.bottom = '80px'
-messageBubbles.style.borderRadius = '10px'
-messageBubbles.style.fontFamily = 'sans-serif'
-messageBubbles.style.fontSize = '16px'
-messageBubbles.style.zIndex = 999999997
-messageBubbles.style.cursor = 'pointer'
-messageBubbles.style.flexDirection = 'column'
-messageBubbles.style.gap = '50px'
-messageBubbles.style.marginLeft = '20px'
-messageBubbles.style.maxWidth = '70vw'
-messageBubbles.style.display = 'none'
 
-// Create the 'X' button element
-const messageBubblesCloseButton = document.createElement('div')
-messageBubblesCloseButton.innerHTML = '&#10005;'
-messageBubblesCloseButton.style.position = 'absolute'
-messageBubblesCloseButton.style.top = '-7px'
-messageBubblesCloseButton.style.right = '-7px'
-messageBubblesCloseButton.style.fontWeight = 'bold'
-messageBubblesCloseButton.style.display = 'none'
-messageBubblesCloseButton.style.justifyContent = 'center'
-messageBubblesCloseButton.style.alignItems = 'center'
-messageBubblesCloseButton.style.zIndex = 999999996
-messageBubblesCloseButton.style.width = '22px'
-messageBubblesCloseButton.style.height = '22px'
-messageBubblesCloseButton.style.borderRadius = '50%'
-messageBubblesCloseButton.style.textAlign = 'center'
-messageBubblesCloseButton.style.fontSize = '12px'
-messageBubblesCloseButton.style.cursor = 'pointer'
-
-messageBubbles.appendChild(messageBubblesCloseButton)
-
-document.body.appendChild(messageBubbles)
 
 chatButton.addEventListener('mouseenter', (event) => {
   chatButton.style.transform = 'scale(1.08)'
@@ -86,7 +51,6 @@ chatButton.addEventListener('click', () => {
   // toggle the chat component
   if (chat.style.display === 'none') {
     has_been_opened = true
-    messageBubbles.style.display = 'none'
     chat.style.display = 'flex'
 
     chatButtonIcon.innerHTML = getChatButtonCloseIcon()
@@ -96,12 +60,7 @@ chatButton.addEventListener('click', () => {
   }
 })
 
-messageBubbles.addEventListener('click', () => {
-  has_been_opened = true
-  messageBubbles.style.display = 'none'
-  chat.style.display = 'flex'
-  chatButtonIcon.innerHTML = getChatButtonCloseIcon()
-})
+
 
 const chat = document.createElement('div')
 chat.setAttribute('id', 'chatbase-bubble-window')
@@ -130,7 +89,6 @@ function handleChatWindowSizeChange(e) {
   if (e.matches) {
     chat.style.height = '500px'
     chat.style.width = '400px'
-    messageBubbles.style.maxWidth = '300px'
   }
 }
 
@@ -158,7 +116,7 @@ const getChatbot = async () => {
     }
   )
   const { qa_chain_id } = await response.json()
-  // console.log(qa_chain_id);
+  console.log(qa_chain_id);
 
   const bot_url = `http://${l.host}/bot?id=${qa_chain_id}`;
   const close_url = `http://${l.host}/chat/close?id=${qa_chain_id}`;
@@ -186,8 +144,6 @@ const getChatbot = async () => {
   chatButton.style.left = 'unset'
   chat.style.right = '20px'
   chat.style.left = 'unset'
-  messageBubbles.style.right = '20px'
-  messageBubbles.style.left = 'unset'
   
 
   document.body.appendChild(chatButton)
@@ -196,29 +152,6 @@ const getChatbot = async () => {
   ICON_COLOR = iconColor
   chatButtonIcon.innerHTML = getChatButtonIcon()
 
-  // Apply the same color and shadow as the messages
-  messageBubblesCloseButton.style.backgroundColor = darkenOrLightenColor('#000000', 0.2);
-
-  messageBubblesCloseButton.style.color ='white';
-
-  messageBubblesCloseButton.style.boxShadow =
-    'rgba(150, 150, 150, 0.15) 0px 6px 24px 0px, rgba(150, 150, 150, 0.15) 0px 0px 0px 1px'
-
-  messageBubbles.addEventListener('mouseenter', () => {
-    messageBubblesCloseButton.style.display = 'flex'
-  })
-
-  // Hide the 'X' button when leaving the messageBubbles
-  messageBubbles.addEventListener('mouseleave', () => {
-    messageBubblesCloseButton.style.display = 'none'
-  })
-
-  // Hide the messageBubbles component when the 'X' button is clicked
-  messageBubblesCloseButton.addEventListener('click', (event) => {
-    // prevent click event from bubbling up to the messageBubbles
-    event.stopPropagation()
-    messageBubbles.style.display = 'none'
-  })
 }
 
 function getChatButtonIcon() {

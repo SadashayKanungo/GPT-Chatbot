@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 import time
 import re
 
-OPENAI_API_KEY = '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'
+OPENAI_API_KEY = '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'
 embed_model = "text-embedding-ada-002"
 
 PINECONE_API_KEY = 'cf212d98-5dca-4520-b59c-3159584c5ea8'

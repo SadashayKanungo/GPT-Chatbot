@@ -53,7 +53,7 @@ $("form[name=newbot_form").submit(function(e) {
   var data = $form.serialize();
 
   $.ajax({
-    url: "/bot/new",
+    url: "/newbot",
     type: "POST",
     data: data,
     dataType: "json",

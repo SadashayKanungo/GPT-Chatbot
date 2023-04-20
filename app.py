@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify, make_response
+from flask import Flask, render_template, request, redirect, jsonify, make_response, send_from_directory
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from flask_cors import CORS, cross_origin
@@ -15,6 +15,10 @@ app.config["JWT_SECRET_KEY"] = b'\xcc^\x91\xea\x17-\xd0W\x03\xa7\xf8J0\xac8\xc5'
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_CSRF_CHECK_FORM"] = True 
 app.config["JWT_CSRF_IN_COOKIES"] = False 
+
+app.config['CHATBOT_STATIC_PATH'] = 'chatbot/build'
+app.config['CHATBOT_SCRIPT_DIR'] = 'cdn'
+app.config['CHATBOT_SCRIPT_FILE'] = 'chatbot.js'
 
 jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
@@ -90,7 +94,7 @@ def login():
 
     return jsonify({ "error": "Invalid login credentials" }), 401
 
-# Frontend Routes
+# Frontend and Static Routes
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -104,32 +108,27 @@ def dashboard():
     bots = db.chatbots.find({'owner':current_user['_id']})
     return render_template('dashboard.html', user=current_user, bots=bots, csrf_token=get_csrf_token(current_user['token']))
 
+@app.route('/bot/', defaults={'path': ''})
+@app.route('/bot/<path:path>')
+def serve(path):
+    if path != "":
+        return send_from_directory(app.config['CHATBOT_STATIC_PATH'], path, as_attachment=False)
+    else:
+        return send_from_directory(app.config['CHATBOT_STATIC_PATH'], 'index.html', as_attachment=False)
+
+@app.route('/cdn/<path:filename>')
+def get_script(filename):
+    return send_from_directory(app.config['CHATBOT_SCRIPT_DIR'], filename, as_attachment=False)
 
 # Bot Script Generation
-def get_script_response(bot_id, bot_name, base_url):
-    script_response = """
-        <button id="chat-button" onclick="open_chatbox()"></button>
-        <iframe src="CHATBOT_WIDGET_URL" id="chat-widget" </iframe>
-        <script>
-            window.gpt_chatbot = {
-                id:"CHATBOT_ID",
-                name:"CHATBOT_NAME",
-                ask_url:"CHATBOT_ASK_URL"
-            }
-            function open_chatbox(){
-                console.log("Open Chatbox");
-            }
-        </script>
-    """
-    script_response = script_response.replace("\n","")
+def get_script_response(bot_id, base_url):
+    script_response = '<script src="CHATBOT_SCRIPT_URL" id="CHATBOT_ID"></script>'
     script_response = script_response.replace("CHATBOT_ID",bot_id)
-    script_response = script_response.replace("CHATBOT_NAME", bot_name)
-    script_response = script_response.replace("CHATBOT_WIDGET_URL", f'{base_url}bot/')
-    script_response = script_response.replace("CHATBOT_ASK_URL", f'{base_url}bot/ask/')
+    script_response = script_response.replace("CHATBOT_SCRIPT_URL", f'{base_url}script/{CHATBOT_SCRIPT_FILE}')
     return script_response
 
-# Bot Routes
-@app.route('/bot/new/', methods=['POST'])
+# Bot Functioning Routes
+@app.route('/newbot/', methods=['POST'])
 @jwt_required()
 def generate_new_bot():
     bot_name = request.form.get('name')
@@ -146,30 +145,30 @@ def generate_new_bot():
         'namespace': namespace,
         'owner': current_user['_id'],
     }
-    new_bot['script'] = get_script_response(new_bot['_id'], bot_name, request.host_url)
+    new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
     if db.chatbots.insert_one(new_bot):
         return jsonify(success=True)
     return jsonify({ "error": "Bot Creation Failed" })
 
-@app.route('/bot/start', methods=['GET'])
+@app.route('/chat/start', methods=['GET'])
 def start_chatbot():
     bot_id = request.args.get('id')
     bot = db.chatbots.find_one({'_id': bot_id})
     namespace = bot['namespace']
     new_qa_chain = QAchain(namespace)
-    qa_chain_id = bot_id + str(round(time.time()*1000))
+    qa_chain_id = uuid.uuid4().hex
     running_chains[qa_chain_id] = new_qa_chain
     return {
         'qa_chain_id': qa_chain_id
     }
 
-@app.route('/bot/close', methods=['GET'])
+@app.route('/chat/close', methods=['GET'])
 def close_chatbot():
     qa_chain_id = request.args.get('id')
     running_chains.pop(qa_chain_id)
     return "QA Chain Closed"
 
-@app.route('/bot/ask', methods=['POST'])
+@app.route('/chat/ask', methods=['POST'])
 def ask_chatbot():
     qa_chain_id = request.json['qa_chain_id']
     qn = request.json['question']

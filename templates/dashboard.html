@@ -1,57 +1,124 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <div class="card-wrapper">
 
-    <div class="navbar">
+<div id="top">
 
-      <h2 class="center">&#128100; {{ user['name'] }}</h2>
+  <header>
+    <h1><a href="/" class="icon_logo"><i>{{ user['name'] }}</i></a></h1>
+    <a href="#mainMenu" class="openMainMenu" hidden></a>
+    <nav id="mainMenu">
+      <a href="#" class="modalClose" hidden></a>
+      <ul>
+        <li hidden><a href="#" class="modalClose">Exit Menu</a></li>
+        <li><a href="#testimonials">My Chatbots</a></li>
+        <li><a href="#getStarted">New Chatbot</a></li>
+        <li class="alternate featured"><a href="/user/signout">Sign Out</a></li>
+      </ul>
+    </nav>
+  </header>
 
-      <h1>Dashboard</h1>
+  <main>
 
-      
 
-      <div class="right">
-        <a href="/user/signout" class="navbtn btn--secondary">Sign Out</a>
-      </div>
-    
-    </div>
+    <section id="testimonials">
 
-    <div class="card-list">
-      <h3 class="center">Your Bots</h3>
+      <header>
+        <h2>My Chatbots</h2>
+      </header>
 
+      <div class="bot-box">
       {% for bot in bots %}
-        <div class="bot-card">
-          <p>
-            Chatbot Name : <strong> {{ bot['name'] }} </strong><br>
-            URL of Sitemap : <strong> {{ bot['sitemap_url'] }} </strong><br>
-            Domain name : <strong> {{ bot['sitemap_url'] }} </strong><br><br>
-            Script :
-            <div class="code"><code>{{ bot['script'] }}</code></div>
-          </p>
-        </div>
-      {% endfor %}    
-    </div>
-
-    <div class="card-list">
-      <h3 class="center">Create New Chatbot</h3>
-      <form name="newbot_form">
-          <input type="hidden" name="csrf_token" value={{csrf_token}}>
-
-          <label for="name">Chatbot Name : </label>
-          <input class="field" type="text" name="name" required>
-          <br>
-          <label for="url">URL of Sitemap : </label>
-          <input class="field" type="url" name="url" required>
-          <br>
-          <label for="domain">Domain name : </label>
-          <input class="field" type="text" name="domain" required>
-          <br>
-          <input type="submit" value="Submit" class="btn">
-          <p class="error error--hidden"></p>
-      </form>
-    
-    </div>
+      <div class="bot-card">
+        <a href="#modal{{bot['_id']}}" class="bot-card-link">
+          <div class="bot-card-bg"></div>
   
-  </div>
+          <div class="bot-card-title">
+            {{ bot['name'] }}
+          </div>
+  
+          <div class="bot-card-date-box">
+            <span class="bot-card-date">
+              {{ bot['domain_name'] }}
+            </span>
+          </div>
+        </a>
+      </div>
+
+      <div class="modal2" id="modal{{bot['_id']}}">
+        <div class="modal2-content">
+          <a href="#" class="modal2-close" title="Close Modal">&#10006;</a>
+          <h3>{{bot['name']}}</h3>
+          <div class="modal2-area">
+            <p>Sitemap URL : <code>{{bot['sitemap_url']}}</code></p><br>
+            <p>Domain Name : <code>{{bot['domain_name']}}</code></p><br>
+            <p>Script : </p>
+            <code>{{bot['script']}}</code>
+          </div>
+        </div>
+      </div>
+            
+
+      {% endfor %}
+    </div>
+
+    <!-- #testimonials --></section>
+
+    <div>
+      <section id="getStarted" class="headerless">
+        <h2>Create New Bot</h2>
+        
+        <form id="register" class="onPageForm" name="newbot_form">
+          <div>
+            <p class="error error--hidden"></p>
+        
+            <fieldset>
+              <input type="hidden" name="csrf_token" value={{csrf_token}}>
+
+              <label class="short">
+                Chatbot Name<br>
+                <input name="name" type="text" required><br>
+              </label><label>
+                URL for Sitemap File <code><small>(.xml)</small></code><br>
+                <input name="url" type="url" required><br>
+              </label><label>
+                Domain Name<br>
+                <input name="domain" type="text" required><br>
+              </label>
+            </fieldset>
+            
+            <footer>
+              <button><span id="submit">Submit</span> <span id="loader" class="loader loader--hidden"></span> </button> 
+            </footer>
+          </div>
+        <!-- #register.modal --></form>
+      <!-- #getStarted --></section>
+    </div>
+
+  </main>
+
+  <footer>
+    <h2 class="icon_logo">GPT<span>Chatbot</span></h2>
+    <ul class="onPageLinks">
+      <li><a href="#testimonials">My Chatbots</a></li>
+      <li><a href="#getStarted">New Chatbot</a></li>
+    </ul>
+    <p>
+      &copy; 2023 GPTChatbot. All rights reserved.
+    </p>
+    <ul class="socialLinks">
+      <li>
+        <a href="#" class="icon_twitter">
+          <span>Twitter</span>
+        </a>
+      </li><li>
+        <a href="#" class="icon_github">
+          <span>Github</span>
+        </a>
+      </li>
+    </ul>
+  </footer>
+
+</div>
+
 {% endblock %}

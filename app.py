@@ -13,6 +13,7 @@ running_chains = dict()
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = b'\xcc^\x91\xea\x17-\xd0W\x03\xa7\xf8J0\xac8\xc5'
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 60*60*24
 app.config["JWT_CSRF_CHECK_FORM"] = True 
 app.config["JWT_CSRF_IN_COOKIES"] = False 
 
@@ -66,7 +67,7 @@ def signup():
     # Add to Database
     if db.users.insert_one(user):
         response = make_response(jsonify(access_token=access_token))
-        response.set_cookie('access_token_cookie', access_token, max_age=60*60*24)
+        response.set_cookie('access_token_cookie', access_token, max_age=app.config["JWT_ACCESS_TOKEN_EXPIRES"])
         return response
 
     return jsonify({ "error": "Signup failed" }), 400
@@ -89,7 +90,7 @@ def login():
         access_token = create_access_token(identity=user)
         user = db.users.find_one_and_update({'_id':user['_id']}, {'$set': {'token': access_token}})
         response = make_response(jsonify(access_token=access_token))
-        response.set_cookie('access_token_cookie', access_token, max_age=60*60*24)
+        response.set_cookie('access_token_cookie', access_token, max_age=app.config["JWT_ACCESS_TOKEN_EXPIRES"])
         return response
 
     return jsonify({ "error": "Invalid login credentials" }), 401

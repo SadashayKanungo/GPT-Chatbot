@@ -22,7 +22,7 @@ $("form[name=signup_form").submit(function(e) {
   e.preventDefault();
 });
 
-$("form[name=login_form").submit(function(e) {
+$("form[name=signin_form").submit(function(e) {
 
   var $form = $(this);
   var $error = $form.find(".error");
@@ -51,8 +51,8 @@ $("form[name=newbot_form").submit(function(e) {
   var $form = $(this);
   var $error = $form.find(".error");
   var data = $form.serialize();
-
-  $.ajax({
+  
+    $.ajax({
     url: "/newbot",
     type: "POST",
     data: data,
@@ -64,6 +64,14 @@ $("form[name=newbot_form").submit(function(e) {
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+    },
+    beforeSend: function () {
+      $("#submit").addClass('loader--hidden');
+      $('#loader').removeClass('loader--hidden');
+    },
+    complete: function (response) {
+      $('#loader').addClass('loader--hidden');
+      $('#submit').removeClass('loader--hidden');
     }
   });
 

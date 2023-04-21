@@ -72,7 +72,7 @@
           {% else %}
             <form action="/create-checkout-session" method="POST">
               <!-- Add a hidden field with the lookup_key of your Price -->
-              <input type="hidden" name="lookup_key" value="{{}}" />
+              <input type="hidden" name="lookup_key" value="" />
               <button id="checkout-and-portal-button" type="submit" class="action">Subscribe</button>
             </form>
           {% endif %}
@@ -93,7 +93,7 @@
           {% else %}
             <form action="/create-checkout-session" method="POST">
               <!-- Add a hidden field with the lookup_key of your Price -->
-              <input type="hidden" name="lookup_key" value="{{}}" />
+              <input type="hidden" name="lookup_key" value="" />
               <button id="checkout-and-portal-button" type="submit" class="action">Subscribe</button>
             </form>
           {% endif %}

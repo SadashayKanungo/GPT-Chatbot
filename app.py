@@ -1,32 +1,30 @@
 from flask import Flask, render_template, request, redirect, jsonify, make_response, send_from_directory
 from pymongo import MongoClient
+from dotenv import load_dotenv
 from bson.objectid import ObjectId
 from flask_cors import CORS, cross_origin
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, current_user, jwt_required, JWTManager, get_csrf_token
 import uuid
 import time
+import os
+
+load_dotenv()
+
 from gpt3 import create_embeddings, QAchain
 
-running_chains = dict()
-
 app = Flask(__name__)
-app.config["JWT_SECRET_KEY"] = b'\xcc^\x91\xea\x17-\xd0W\x03\xa7\xf8J0\xac8\xc5'
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 60*60*24
-app.config["JWT_CSRF_CHECK_FORM"] = True 
-app.config["JWT_CSRF_IN_COOKIES"] = False 
-
-app.config['CHATBOT_STATIC_PATH'] = 'chatbot/build'
-app.config['CHATBOT_SCRIPT_DIR'] = 'cdn'
-app.config['CHATBOT_SCRIPT_FILE'] = 'chatbot.js'
+app.config.from_pyfile('config.py')
+app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
 
 jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 CORS(app)
 
-client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient(os.getenv("MONGODB_URL"))
 db = client.gpt_chatbot
+
+running_chains = dict()
 
 # JWT and Login Helpers
 @jwt.user_identity_loader

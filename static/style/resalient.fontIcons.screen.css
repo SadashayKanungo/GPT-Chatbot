@@ -901,7 +901,7 @@ main > div .action {
 	align-items: flex-start;
 	-ms-flex-wrap: wrap;
 	flex-wrap: wrap;
-  
+    width: 100%;
 	padding: 50px 0;
   }
   .bot-card {
@@ -916,9 +916,7 @@ main > div .action {
 	display: block;
 	padding: 30px 20px;
 	background-color: var(--highlightColor);
-  
 	overflow: hidden;
-  
 	position: relative;
   }
   .bot-card-link:hover,
@@ -986,12 +984,11 @@ main > div .action {
 	  flex-basis: calc(50% - 30px);
 	}
 	.bot-card-title {
-    text-transform:capitalize;
+      text-transform:capitalize;
 	  font-size: 24px;
 	}
   }
   
-
   @media only screen and (max-width: 639px) {
 	.bot-card {
 	  -ms-flex-preferred-size: 100%;
@@ -1000,7 +997,7 @@ main > div .action {
 	.bot-card-title {
 	  min-height: 72px;
 	  line-height: 1;
-    text-transform:capitalize;
+      text-transform:capitalize;
 	  font-size: 24px;
 	}
 	.bot-card-link {
@@ -1078,9 +1075,9 @@ form.onPageForm footer button:hover {
 } 
 
 .loader {
-  width: 25px;
-  height: 25px;
-  border: 4px solid var(--pureColor);
+  width: 15px;
+  height: 15px;
+  border: 3px solid var(--pureColor);
   border-bottom-color: transparent;
   border-radius: 50%;
   display: inline-block;
@@ -1103,10 +1100,10 @@ form.onPageForm footer button:hover {
   top:0px;
   left:0px;
   bottom:0px;
-  transition:all .5s ease-in-out;
+  transition:all .5s ease-in-out, visibility 0;
   opacity:0;
   visibility:hidden;
-  z-index:-1;
+  z-index:-5;
 }
 .modal2:target {
   opacity:1;
@@ -1131,7 +1128,7 @@ form.onPageForm footer button:hover {
 .modal2:target .modal2-content {
   transform:translate(-50%, -50%);
   transition:all .5s ease-in-out;
-  transition-delay:.5s;
+  transition-delay: .5s;
   z-index:6;
   opacity:1;
   visibility:visible;
@@ -1174,6 +1171,8 @@ form.onPageForm footer button:hover {
   padding: 5px;
   line-height:0.8rem;
   margin-left:10px;
+  overflow-x: scroll;
+  scrollbar-width:none;
 }
 .modal2-area .code{
   font-family: monospace;
@@ -1181,7 +1180,30 @@ form.onPageForm footer button:hover {
   background-color: var(--highlightColor);
   border-radius: 5px;
   padding: 5px;
+  overflow-x: scroll;
+  scrollbar-width:none;
 }
+
+.modal2-area .code {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+}
+.modal2-area .code::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+}
+
+@media only screen and (max-width: 979px) {
+	.modal2-content {
+		width:75%;
+	  }
+  }
+  
+
+  @media only screen and (max-width: 639px) {
+	.modal2-content {
+		width:95%;
+	  }
+  }
 
 /*=============================================================================================*/
 #accountDetails p {

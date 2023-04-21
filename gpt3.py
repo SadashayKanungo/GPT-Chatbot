@@ -6,20 +6,15 @@ import xmltodict
 from bs4 import BeautifulSoup
 import time
 import re
+import os
 
-OPENAI_API_KEY = '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'
-embed_model = "text-embedding-ada-002"
-
-PINECONE_API_KEY = 'cf212d98-5dca-4520-b59c-3159584c5ea8'
-PINECONE_ENVIRONMENT = 'us-west4-gcp'
-index_name = 'openai-youtube-transcriptions'
-
-openai.api_key = OPENAI_API_KEY
+openai.api_key = os.getenv("OPENAI_API_KEY")
 pinecone.init(
-    api_key=PINECONE_API_KEY,
-    environment=PINECONE_ENVIRONMENT
+    api_key = os.getenv("PINECONE_API_KEY"),
+    environment = os.getenv("PINECONE_ENVIRONMENT")
 )
 # check if index already exists (it shouldn't if this is first time)
+index_name = os.getenv("PINECONE_INDEX_NAME")
 if index_name not in pinecone.list_indexes():
     # if does not exist, create index
     pinecone.create_index(
@@ -30,7 +25,7 @@ if index_name not in pinecone.list_indexes():
     )
 index = pinecone.Index(index_name)
 
-
+embed_model = "text-embedding-ada-002"
 
 def extract_data_from(url):
     html = requests.get(url).text
@@ -74,7 +69,7 @@ def pinecone_upsert(data, namespace):
         } for x in meta_batch]
         to_upsert = list(zip(ids_batch, embeds, meta_batch))
         #upsert to Pinecone
-        index.upsert(vectors=to_upsert,namespace=namespace)
+        # index.upsert(vectors=to_upsert,namespace=namespace)
 
 def split_text(text, chunk_size, overlap):
     sentences = re.split(r'(?<=[.!?]) +', text)

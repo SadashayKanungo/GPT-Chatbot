@@ -7,12 +7,16 @@ const ask_url = `http://${window.location.host}/chat/ask`;
 
 console.log(ask_url, qa_chain_id);
 
+
 const ActionProvider = ({ createChatBotMessage, setState, children }) => {
   const handleQuery = async (question) => {
+    document.getElementById("header").style.display = "none";
+    document.getElementById("loader").style.display = "flex";
+    
     try {
       const {data} = await axios.post(ask_url, {question, qa_chain_id});
       const botMessage = createChatBotMessage(data.answer);
-      
+
       setState((prev) => ({
         ...prev,
         messages: [...prev.messages, botMessage],
@@ -26,6 +30,9 @@ const ActionProvider = ({ createChatBotMessage, setState, children }) => {
         messages: [...prev.messages, botError],
       }));
     }
+    
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("header").style.display = "flex";
   };
 
   // Put the handleHello function in the actions object to pass to the MessageParser

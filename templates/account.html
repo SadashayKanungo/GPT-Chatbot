@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div id="top">
+
+  <header>
+    <h1><a href="/" class="icon_logo"><i>{{ user['name'] }}</i></a></h1>
+    <a href="#mainMenu" class="openMainMenu" hidden></a>
+    <nav id="mainMenu">
+      <a href="#" class="modalClose" hidden></a>
+      <ul>
+        <li hidden><a href="#" class="modalClose">Exit Menu</a></li>
+        <li><a href="#testimonials">Details</a></li>
+        <li><a href="#pricing">Subscribe</a></li>
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li class="alternate featured"><a href="/user/signout">Sign Out</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+
+    <section id="testimonials">
+      <header id="accountDetails">
+        <h2>Account Details</h2><br>
+        <p>Name : <code>{{user['name']}}</code></p><br>
+        <p>Email : <code>{{user['email']}}</code></p><br>
+        <p>Subscription : <code>{{user['plan']}}</code></p><br>
+      </header>
+    <!-- #testimonials --></section>
+
+
+
+
+    <div>
+      <section id="pricing">
+
+        <header>
+          <h2><span>Simple pricing,</span> for everyone</h2>
+          <p>
+            It doesn’t matter what size your business is, our software works well for you.
+          </p>
+        </header>
+
+        <article>
+          <h3><span>Starter</span>&#8377;0<small> /month</small></h3>
+          <p>
+            Good for anyone who is self-employed and just getting started.
+          </p>
+          {% if user['plan'] == "Starter" %}
+            <a href="#" class="action"><i>&#10004;</i></a>
+          {% else %}
+            <!-- What to do -->
+      </form>
+          {% endif %}
+          <ul>
+            <li>Create 5 Chatbots</li>
+            <li>Unlimited Source URLs</li>
+            <li>Unlimited Requests</li>
+            
+          </ul>
+        </article>
+
+        <article class="featured">
+          <h3><span>Standard</span>&#8377;499<small> /month</small></h3>
+          <p>
+            Perfect for small / medium sized businesses.
+          </p>
+          {% if user['plan'] == "Standard" %}
+            <a href="#" class="action"><i>&#10004;</i></a>
+          {% else %}
+            <form action="/create-checkout-session" method="POST">
+              <!-- Add a hidden field with the lookup_key of your Price -->
+              <input type="hidden" name="lookup_key" value="{{}}" />
+              <button id="checkout-and-portal-button" type="submit" class="action">Subscribe</button>
+            </form>
+          {% endif %}
+          <ul>
+            <li>Create 20 Chatbots</li>
+            <li>Unlimited Source URLs</li>
+            <li>Unlimited Requests</li>
+          </ul>
+        </article>
+
+        <article>
+          <h3><span>Premium</span>&#8377;999<small> /month</small></h3>
+          <p>
+            For even the biggest enterpise companies.
+          </p>
+          {% if user['plan'] == "Premium" %}
+            <a href="#" class="action"><i>&#10004;</i></a>
+          {% else %}
+            <form action="/create-checkout-session" method="POST">
+              <!-- Add a hidden field with the lookup_key of your Price -->
+              <input type="hidden" name="lookup_key" value="{{}}" />
+              <button id="checkout-and-portal-button" type="submit" class="action">Subscribe</button>
+            </form>
+          {% endif %}
+          <ul>
+            <li>Create 50 Chatbots</li>
+            <li>Unlimited Source URLs</li>
+            <li>Unlimited Requests</li>
+          </ul>
+        </article>
+
+      <!-- #pricing --></section>
+    </div>
+
+
+  </main>
+
+  <footer>
+    <h2 class="icon_logo">GPT<span>Chatbot</span></h2>
+    <ul class="onPageLinks">
+        <li><a href="#testimonials">Details</a></li>
+        <li><a href="#pricing">Subscribe</a></li>
+        <li><a href="/dashboard">Dashboard</a></li>
+    </ul>
+    <p>
+      &copy; 2023 GPTChatbot. All rights reserved.
+    </p>
+    <ul class="socialLinks">
+      <li>
+        <a href="#" class="icon_twitter">
+          <span>Twitter</span>
+        </a>
+      </li><li>
+        <a href="#" class="icon_github">
+          <span>Github</span>
+        </a>
+      </li>
+    </ul>
+  </footer>
+
+</div>
+
+{% endblock %}

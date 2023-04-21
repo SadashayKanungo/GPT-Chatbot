@@ -50,7 +50,8 @@ def signup():
         "name": request.form.get('name'),
         "email": request.form.get('email'),
         "password": request.form.get('password'),
-        "token": None
+        "token": None,
+        "plan":"Starter"
     }
 
     # Encrypt the password
@@ -108,6 +109,14 @@ def dashboard():
 
     bots = db.chatbots.find({'owner':current_user['_id']})
     return render_template('dashboard.html', user=current_user, bots=bots, csrf_token=get_csrf_token(current_user['token']))
+
+@app.route('/account/')
+@jwt_required()
+def account():
+    if not current_user['token']:
+        return jsonify({ "error": "Not Authorized" }), 401
+
+    return render_template('account.html', user=current_user)
 
 @app.route('/bot/', defaults={'path': ''})
 @app.route('/bot/<path:path>')
@@ -179,6 +188,10 @@ def ask_chatbot():
     return {
         'answer': ans
     }
+
+# Stripe Endpoints
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)

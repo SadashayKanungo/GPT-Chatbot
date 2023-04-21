@@ -25,8 +25,8 @@ body {
 	--primeSelection:#0484;
 	--gradientStart:#05C;
 	--gradientEnd:#507;
-  --red:#ff1111;
-  --red-translucent:#ff9999;
+  	--red:#ff1111;
+  	--red-translucent:#ff6565;
 }
 
 html,body,div,p,h1,h2,h3,h4,h5,h6,
@@ -34,6 +34,7 @@ ul,ol,li,dl,dt,dd,form,fieldset,caption,legend,
 table,tr,td,th,address,blockquote,img {
 	margin:0;
 	padding:0;
+	scroll-behavior: smooth;
 }
 
 img, fieldset {
@@ -170,7 +171,7 @@ h1 span {
 #mainMenu {
 	flex-grow:1;
 	padding-left:1.5rem;
-  z-index: 2;
+  	z-index: 3;
 }
 
 #mainMenu li {
@@ -928,7 +929,6 @@ main > div .action {
   .bot-card-link:hover,
   .bot-card-link:hover .bot-card-title {
 	text-decoration: none;
-  text-transform:capitalize;
 	color: var(--primeColor);
   }
   .bot-card-link:hover .bot-card-bg {
@@ -942,7 +942,7 @@ main > div .action {
 	overflow: hidden;
 	font-weight: bold;
 	font-size: 30px;
-  text-transform:capitalize;
+  	text-transform:capitalize;
 	color: var(--flowColor);
 	z-index: 2;
 	position: relative;
@@ -1054,12 +1054,11 @@ form.onPageForm footer button:hover {
 
 .error {
   margin: 0;
-  font-size: 26px;
+  padding: 10px;
+  border-radius: 999px;
   font-weight: bold;
-  line-height: 26px;
-  padding: 5px;
   text-align: center;
-  color: var(--red);
+  color: var(--primeColor);
   background-color: var(--red-translucent);
 }
 
@@ -1127,6 +1126,7 @@ form.onPageForm footer button:hover {
   perspective: 1000;
   outline:1px solid transparent;
   opacity:0;
+  visibility:hidden;
 }
 .modal2:target .modal2-content {
   transform:translate(-50%, -50%);
@@ -1134,6 +1134,7 @@ form.onPageForm footer button:hover {
   transition-delay:.5s;
   z-index:6;
   opacity:1;
+  visibility:visible;
 }
 .modal2-close {
   float:right;
@@ -1172,4 +1173,26 @@ form.onPageForm footer button:hover {
   border-radius: 5px;
   padding: 5px;
   line-height:0.8rem;
+  margin-left:10px;
 }
+.modal2-area .code{
+  font-family: monospace;
+  font-weight: bold;
+  background-color: var(--highlightColor);
+  border-radius: 5px;
+  padding: 5px;
+}
+
+/*=============================================================================================*/
+#accountDetails p {
+	text-align: left;
+  }
+#accountDetails code{
+	font-weight: bold;
+	background-color: var(--highlightColor);
+	border-radius: 5px;
+	padding: 5px;
+	line-height:0.8rem;
+	margin-left:10px;
+	margin-right: 50px;
+  }

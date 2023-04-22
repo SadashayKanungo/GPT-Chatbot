@@ -9,6 +9,12 @@ CHATBOT_STATIC_PATH = 'chatbot/build'
 CHATBOT_SCRIPT_DIR = 'cdn'
 CHATBOT_SCRIPT_FILE = 'chatbot.js'
 
+PLAN_LIMITS = {
+    'Starter':5,
+    'Standard':20,
+    'Premium':50,
+}
+
 
 ### .env configuration
 
@@ -18,3 +24,8 @@ CHATBOT_SCRIPT_FILE = 'chatbot.js'
 # PINECONE_ENVIRONMENT=
 # PINECONE_INDEX_NAME=
 # JWT_SECRET_KEY=
+# STRIPE_PUBLISHABLE_KEY=
+# STRIPE_SECRET_KEY=
+# STRIPE_STANDARD_PRICE_ID=
+# STRIPE_PREMIUM_PRICE_ID=
+# STRIPE_ENDPOINT_SECRET=

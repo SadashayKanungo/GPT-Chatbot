@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from flask_cors import CORS, cross_origin
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, current_user, jwt_required, JWTManager, get_csrf_token
+import stripe
 import uuid
 import time
 import os
@@ -22,6 +23,15 @@ CORS(app)
 
 client = MongoClient(os.getenv("MONGODB_URL"))
 db = client.gpt_chatbot
+
+stripe_keys = {
+    "secret_key": os.environ["STRIPE_SECRET_KEY"],
+    "publishable_key": os.environ["STRIPE_PUBLISHABLE_KEY"],
+    "standard_price_id": os.environ["STRIPE_STANDARD_PRICE_ID"],
+    "premium_price_id": os.environ["STRIPE_PREMIUM_PRICE_ID"],
+    "endpoint_secret": os.environ["STRIPE_ENDPOINT_SECRET"],
+}
+stripe.api_key = stripe_keys["secret_key"]
 
 running_chains = dict()
 
@@ -139,6 +149,10 @@ def get_script_response(bot_id, base_url):
 @app.route('/newbot/', methods=['POST'])
 @jwt_required()
 def generate_new_bot():
+    user_bot_count = db.chatbots.count_documents({"owner":current_user['_id']})
+    if user_bot_count >= app.config["PLAN_LIMITS"][current_user['plan']]:
+        return jsonify({ "error": "Plan Limit reached" }), 501
+
     bot_name = request.form.get('name')
     sitemap_url = request.form.get('url')
     domain_name = request.form.get('domain')
@@ -156,7 +170,7 @@ def generate_new_bot():
     new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
     if db.chatbots.insert_one(new_bot):
         return jsonify(success=True)
-    return jsonify({ "error": "Bot Creation Failed" })
+    return jsonify({ "error": "Bot Creation Failed" }), 501
 
 @app.route('/chat/start', methods=['GET'])
 def start_chatbot():
@@ -188,6 +202,86 @@ def ask_chatbot():
 
 # Stripe Endpoints
 
+@app.route("/stripe/success")
+def success():
+    return render_template("success.html")
+
+
+@app.route("/stripe/cancel")
+def cancelled():
+    return render_template("cancel.html")
+
+@app.route("/stripe/config")
+def get_publishable_key():
+    stripe_config = {"publicKey": stripe_keys["publishable_key"]}
+    return jsonify(stripe_config)
+
+@app.route("/stripe/create-checkout-session")
+@jwt_required()
+def create_checkout_session():
+    domain_url = request.host_url
+    stripe.api_key = stripe_keys["secret_key"]
+    plan = request.args.get('plan')
+    price_of_plan = {
+        'Standard': stripe_keys["standard_price_id"],
+        'Premium': stripe_keys["premium_price_id"]
+    }
+    price_id = price_of_plan[plan]
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            # you should get the user id here and pass it along as 'client_reference_id'
+            #
+            # this will allow you to associate the Stripe session with
+            # the user saved in your database
+            #
+            client_reference_id=current_user['_id'],
+            success_url=domain_url + "stripe/success?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=domain_url + "stripe/cancel",
+            payment_method_types=["card"],
+            mode="subscription",
+            line_items=[
+                {
+                    "price": price_id,
+                    "quantity": 1
+                }
+            ]
+        )
+        return jsonify({"sessionId": checkout_session["id"]})
+    except Exception as e:
+        return jsonify(error=str(e)), 403
+
+@app.route("/stripe/webhook", methods=["POST"])
+def stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get("Stripe-Signature")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, stripe_keys["endpoint_secret"]
+        )
+
+    except ValueError as e:
+        # Invalid payload
+        return "Invalid payload", 400
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        return "Invalid signature", 400
+
+    # Handle the checkout.session.completed event
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        expanded_session = stripe.checkout.Session.retrieve(session.id, expand=["line_items"])
+        # Fulfill the purchase...
+        handle_checkout_session(expanded_session)
+
+    return "Success", 200
+
+def handle_checkout_session(session):
+    buyer_id = session["client_reference_id"]
+    plan = session.line_items.data[0]["description"]
+    db.users.find_one_and_update({'_id':buyer_id}, {'$set': {'plan': plan}})
+    print("Subscription was successful. Database Updated.", buyer_id, plan)
 
 
 if __name__ == "__main__":

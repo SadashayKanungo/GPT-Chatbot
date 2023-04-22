@@ -49,10 +49,9 @@
             Good for anyone who is self-employed and just getting started.
           </p>
           {% if user['plan'] == "Starter" %}
-            <a href="#" class="action"><i>&#10004;</i></a>
+            <button type="submit" class="action" disabled><i>&#10004;</i></button>
           {% else %}
-            <!-- What to do -->
-      </form>
+            <button type="submit" class="action" disabled><i>&#8212;</i></button>
           {% endif %}
           <ul>
             <li>Create 5 Chatbots</li>
@@ -68,13 +67,11 @@
             Perfect for small / medium sized businesses.
           </p>
           {% if user['plan'] == "Standard" %}
-            <a href="#" class="action"><i>&#10004;</i></a>
+            <button type="submit" class="action" disabled><i>&#10004;</i></button>
+          {% elif user['plan'] == "Premium" %}
+            <button type="submit" class="action" disabled><i>&#8212;</i></button>
           {% else %}
-            <form action="/create-checkout-session" method="POST">
-              <!-- Add a hidden field with the lookup_key of your Price -->
-              <input type="hidden" name="lookup_key" value="" />
-              <button id="checkout-and-portal-button" type="submit" class="action">Subscribe</button>
-            </form>
+            <button type="submit" class="action" id="buyStandard">Subscribe</button>
           {% endif %}
           <ul>
             <li>Create 20 Chatbots</li>
@@ -89,13 +86,9 @@
             For even the biggest enterpise companies.
           </p>
           {% if user['plan'] == "Premium" %}
-            <a href="#" class="action"><i>&#10004;</i></a>
+            <button type="submit" class="action" disabled><i>&#10004;</i></button>
           {% else %}
-            <form action="/create-checkout-session" method="POST">
-              <!-- Add a hidden field with the lookup_key of your Price -->
-              <input type="hidden" name="lookup_key" value="" />
-              <button id="checkout-and-portal-button" type="submit" class="action">Subscribe</button>
-            </form>
+            <button type="submit" class="action" id="buyPremium">Subscribe</button>
           {% endif %}
           <ul>
             <li>Create 50 Chatbots</li>

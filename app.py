@@ -157,20 +157,22 @@ def generate_new_bot():
     sitemap_url = request.form.get('url')
     domain_name = request.form.get('domain')
     
-    namespace = create_embeddings(sitemap_url, domain_name)
+    try:
+        namespace = create_embeddings(sitemap_url, domain_name)
 
-    new_bot = {
-        '_id': uuid.uuid4().hex,
-        'name': bot_name,
-        'sitemap_url': sitemap_url,
-        'domain_name': domain_name,
-        'namespace': namespace,
-        'owner': current_user['_id'],
-    }
-    new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
-    if db.chatbots.insert_one(new_bot):
+        new_bot = {
+            '_id': uuid.uuid4().hex,
+            'name': bot_name,
+            'sitemap_url': sitemap_url,
+            'domain_name': domain_name,
+            'namespace': namespace,
+            'owner': current_user['_id'],
+        }
+        new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
+        db.chatbots.insert_one(new_bot)
         return jsonify(success=True)
-    return jsonify({ "error": "Bot Creation Failed" }), 501
+    except:
+        return jsonify({ "error": "Bot Creation Failed" }), 501
 
 @app.route('/chat/start', methods=['GET'])
 def start_chatbot():

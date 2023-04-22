@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const urlParams = new URLSearchParams(window.location.search);
 const qa_chain_id = urlParams.get('id');
-const ask_url = `http://${window.location.host}/chat/ask`;
+const ask_url = `${window.location.protocol}//${window.location.host}/chat/ask`;
 
 console.log(ask_url, qa_chain_id);
 

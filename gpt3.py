@@ -69,7 +69,7 @@ def pinecone_upsert(data, namespace):
         } for x in meta_batch]
         to_upsert = list(zip(ids_batch, embeds, meta_batch))
         #upsert to Pinecone
-        # index.upsert(vectors=to_upsert,namespace=namespace)
+        index.upsert(vectors=to_upsert,namespace=namespace)
 
 def split_text(text, chunk_size, overlap):
     sentences = re.split(r'(?<=[.!?]) +', text)

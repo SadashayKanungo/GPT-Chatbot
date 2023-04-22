@@ -105,7 +105,7 @@ const getChatbot = async () => {
 
   var l = document.createElement('a');
   l.href = scriptTag.src;
-  const start_url =  `http://${l.host}/chat/start?id=${bot_id}`;
+  const start_url =  `${l.protocol}//${l.host}/chat/start?id=${bot_id}`;
   const response = await fetch(
     start_url,
     {
@@ -118,8 +118,8 @@ const getChatbot = async () => {
   const { qa_chain_id } = await response.json()
   console.log(qa_chain_id);
 
-  const bot_url = `http://${l.host}/bot?id=${qa_chain_id}`;
-  const close_url = `http://${l.host}/chat/close?id=${qa_chain_id}`;
+  const bot_url = `${l.protocol}//${l.host}/bot?id=${qa_chain_id}`;
+  const close_url = `${l.protocol}//${l.host}/chat/close?id=${qa_chain_id}`;
   async function handleBeforeUnload(event) {
     const response = await fetch(
       close_url,

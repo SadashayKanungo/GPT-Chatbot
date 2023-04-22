@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, redirect, jsonify, make_response, send_from_directory
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from bson.objectid import ObjectId
 from flask_cors import CORS, cross_origin
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, current_user, jwt_required, JWTManager, get_csrf_token

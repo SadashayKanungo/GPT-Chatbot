@@ -100,44 +100,14 @@ handleChatWindowSizeChange(mediaQuery)
 
 const getChatbot = async () => {
   ////////////////////////////////////////// NEW STUFF //////////////////////////////////////////
-  const scriptTag = document.currentScript
-  const bot_id = scriptTag.id
-
+  const bot_id = document.currentScript.id;
   var l = document.createElement('a');
-  l.href = scriptTag.src;
-  const start_url =  `${l.protocol}//${l.host}/chat/start?id=${bot_id}`;
-  const response = await fetch(
-    start_url,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  )
-  const { qa_chain_id } = await response.json()
-  console.log(qa_chain_id);
-
-  const bot_url = `${l.protocol}//${l.host}/bot?id=${qa_chain_id}`;
-  const close_url = `${l.protocol}//${l.host}/chat/close?id=${qa_chain_id}`;
-  async function handleBeforeUnload(event) {
-    const response = await fetch(
-      close_url,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    )
-    console.log('Document is closing or refreshing...');
-  }
-  window.addEventListener('beforeunload', handleBeforeUnload);
-
+  l.href = document.currentScript.src;
+  const bot_url = `${l.protocol}//${l.host}/bot?id=${bot_id}`;
   chat.innerHTML = `<iframe id="chatbot_widget" src="${bot_url}" width="100%" height="100%" frameborder="0""></iframe>`
   // chat.innerHTML = `<iframe id="chatbot_widget" src="http://localhost:3000?id=${qa_chain_id}" width="100%" height="100%" frameborder="0"></iframe>`
 
-  ///////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   chatButton.style.backgroundColor = CHAT_BUTTON_BACKGROUND_COLOR
   
   chatButton.style.right = '20px'
@@ -188,46 +158,6 @@ function getContrastingTextColor(bgColor) {
 
   // Return the appropriate text color based on the luminance value
   return luminance > 0.5 ? 'black' : 'white'
-}
-
-function darkenOrLightenColor(color, percentage) {
-  // Ensure the input is in the format #RRGGBB
-  if (color.charAt(0) === '#') {
-    color = color.substr(1)
-  }
-
-  const getColorValue = (value) => {
-    // Clamp the value between 0 and 255
-    return Math.min(255, Math.max(0, value))
-  }
-
-  // Convert the input color to RGB
-  const r = parseInt(color.substr(0, 2), 16)
-  const g = parseInt(color.substr(2, 2), 16)
-  const b = parseInt(color.substr(4, 2), 16)
-
-  // Calculate the luminance value using the WCAG formula
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-
-  // Determine whether the color is light or dark
-  const isLight = luminance > 0.5
-
-  // Calculate the adjustment value
-  const adjustment = isLight ? -1 * Math.abs(percentage) : Math.abs(percentage)
-
-  // Adjust the color values
-  const newR = getColorValue(r + Math.round(255 * adjustment))
-  const newG = getColorValue(g + Math.round(255 * adjustment))
-  const newB = getColorValue(b + Math.round(255 * adjustment))
-
-  // Convert the adjusted color values back to the hex format
-  const newColor =
-    '#' +
-    newR.toString(16).padStart(2, '0') +
-    newG.toString(16).padStart(2, '0') +
-    newB.toString(16).padStart(2, '0')
-
-  return newColor
 }
 
 getChatbot()

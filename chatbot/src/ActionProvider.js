@@ -1,20 +1,15 @@
 import React from 'react';
 import axios from 'axios';
 
-const urlParams = new URLSearchParams(window.location.search);
-const qa_chain_id = urlParams.get('id');
-const ask_url = `${window.location.protocol}//${window.location.host}/chat/ask`;
 
-console.log(ask_url, qa_chain_id);
-
-
-const ActionProvider = ({ createChatBotMessage, setState, children }) => {
+const ActionProvider = ({ createChatBotMessage, setState, children, ask_url}) => {
+  // console.log(ask_url);
   const handleQuery = async (question) => {
     document.getElementById("header").style.display = "none";
     document.getElementById("loader").style.display = "flex";
     
     try {
-      const {data} = await axios.post(ask_url, {question, qa_chain_id});
+      const {data} = await axios.post(ask_url, {question});
       const botMessage = createChatBotMessage(data.answer);
 
       setState((prev) => ({

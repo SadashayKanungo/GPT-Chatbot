@@ -4,7 +4,7 @@ import MyHeader from './Components/MyHeader';
 import MyBotAvator from './Components/MyBotAvator';
 
 // const bot_name = window.gpt_chatbot.name;
-const bot_name = 'GPT chatbot'
+const bot_name = 'GPT Chatbot'
 
 const config = {
   initialMessages: [createChatBotMessage(`Hello there!`)],

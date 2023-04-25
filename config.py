@@ -15,6 +15,8 @@ PLAN_LIMITS = {
     'Premium':50,
 }
 
+CHAT_RETAIN_TIME = 60*10
+
 
 ### .env configuration
 

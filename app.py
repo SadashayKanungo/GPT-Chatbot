@@ -4,14 +4,14 @@ from dotenv import load_dotenv
 from flask_cors import CORS, cross_origin
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, current_user, jwt_required, JWTManager, get_csrf_token
+from datetime import datetime, timezone
 import stripe
 import uuid
-import time
 import os
 
 load_dotenv()
 
-from gpt3 import create_embeddings, QAchain
+from gpt3 import create_embeddings, get_answer
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -23,6 +23,8 @@ CORS(app)
 
 client = MongoClient(os.getenv("MONGODB_URL"))
 db = client.gpt_chatbot
+# db.chats.ensure_index("last_access", expireAfterSeconds=app.config['CHAT_RETAIN_TIME'])
+db.chats.create_index("last_access", expireAfterSeconds=app.config['CHAT_RETAIN_TIME'])
 
 stripe_keys = {
     "secret_key": os.environ["STRIPE_SECRET_KEY"],
@@ -33,7 +35,7 @@ stripe_keys = {
 }
 stripe.api_key = stripe_keys["secret_key"]
 
-running_chains = dict()
+# running_chains = dict()
 
 # JWT and Login Helpers
 @jwt.user_identity_loader
@@ -133,16 +135,11 @@ def serve(path):
     else:
         return send_from_directory(app.config['CHATBOT_STATIC_PATH'], 'index.html', as_attachment=False)
 
-@app.route('/cdn/<path:filename>')
-def get_script(filename):
-    return send_from_directory(app.config['CHATBOT_SCRIPT_DIR'], filename, as_attachment=False)
-
 # Bot Script Generation
 def get_script_response(bot_id, base_url):
     script_response = '<script src="CHATBOT_SCRIPT_URL" id="CHATBOT_ID"></script>'
     script_response = script_response.replace("CHATBOT_ID",bot_id)
-    script_file = app.config['CHATBOT_SCRIPT_FILE']
-    script_response = script_response.replace("CHATBOT_SCRIPT_URL", f'{base_url}cdn/{script_file}')
+    script_response = script_response.replace("CHATBOT_SCRIPT_URL", f'{base_url}static/js/{app.config["CHATBOT_SCRIPT_FILE"]}')
     return script_response
 
 # Bot Functioning Routes
@@ -177,29 +174,66 @@ def generate_new_bot():
 @app.route('/chat/start', methods=['GET'])
 def start_chatbot():
     bot_id = request.args.get('id')
-    bot = db.chatbots.find_one({'_id': bot_id})
-    namespace = bot['namespace']
-    new_qa_chain = QAchain(namespace)
-    qa_chain_id = uuid.uuid4().hex
-    running_chains[qa_chain_id] = new_qa_chain
+    ip_addr = str(request.remote_addr)
+    # Check if chat entry with same bot id and ip addr
+    prev_chat = db.chats.find_one({'bot_id':bot_id, 'ip_addr': ip_addr})
+    if prev_chat:
+        # If yes, update last access and set chat obj to found entry
+        db.chats.find_one_and_update({'_id':prev_chat['_id']}, {'$set': {'last_access': datetime.now(timezone.utc)}})
+        chat = prev_chat
+    else:
+        # If not, create new entry and set chat obj to new entry
+        bot = db.chatbots.find_one({'_id':bot_id})
+        chat = {
+            '_id': uuid.uuid4().hex,
+            'bot_id': bot_id,
+            'ip_addr': ip_addr,
+            'namespace': bot['namespace'],
+            'messages': [],
+            'internal_messages': [{"role": "system", "content": "You are a helpful assistant."}],
+            'last_access': datetime.utcnow(),
+        }
+        db.chats.insert_one(chat)
+    
+    # Create qa_chain object from chat
+    # bot = db.chatbots.find_one({'_id':bot_id})
+    # new_qa_chain = QAchain(bot['namespace'], chat['messages'], chat['internal_messages'])
+    # running_chains[chat['_id']] = new_qa_chain
     return {
-        'qa_chain_id': qa_chain_id
+        'qa_chain_id': chat['_id'],
+        'messages': chat['messages']
     }
 
-@app.route('/chat/close', methods=['GET'])
-def close_chatbot():
-    qa_chain_id = request.args.get('id')
-    running_chains.pop(qa_chain_id)
-    return "QA Chain Closed"
+# @app.route('/chat/close', methods=['GET'])
+# def close_chatbot():
+#     qa_chain_id = request.args.get('id')
+#     qa_chain = running_chains[qa_chain_id]
+#     message_dict = qa_chain.get_messages()
+#     db.chats.find_one_and_update({'_id':qa_chain_id}, {'$set': {
+#         'messages': message_dict['messages'],
+#         'internal_messages': message_dict['internal_messages'],
+#         'last_access': datetime.now(timezone.utc)
+#     }})
+#     running_chains.pop(qa_chain_id)
+#     return "QA Chain Closed"
 
 @app.route('/chat/ask', methods=['POST'])
 def ask_chatbot():
-    qa_chain_id = request.json['qa_chain_id']
+    qa_chain_id = request.args.get('id')
     qn = request.json['question']
-    qa_chain = running_chains[qa_chain_id]
-    ans = qa_chain.ask(qn)
+    # qa_chain = running_chains[qa_chain_id]
+    # ans = qa_chain.ask(qn)
+    chat = db.chats.find_one({'_id':qa_chain_id})
+    response = get_answer(qn, chat['internal_messages'], chat['namespace'])
+    updated_messages = chat['messages'] + [{"role":"user", "content":qn}, {"role":"assisstant", "content":response['answer']}]
+    # message_dict = qa_chain.get_messages()
+    db.chats.find_one_and_update({'_id':qa_chain_id}, {'$set': {
+        'messages': updated_messages,
+        'internal_messages': response['internal_messages'],
+        'last_access': datetime.now(timezone.utc)
+    }})
     return {
-        'answer': ans
+        'answer': response['answer']
     }
 
 # Stripe Endpoints

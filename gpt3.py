@@ -2,7 +2,8 @@ import openai
 from tqdm.auto import tqdm
 import pinecone
 import requests
-import xmltodict
+from urllib.parse import urljoin
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import time
 import re
@@ -99,17 +100,70 @@ def chunkify(data):
             chunked_data.append(new_post)
     return chunked_data
 
+def get_all_links_from_sitemap_v2(sitemap_url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'From': 'googlebot(at)googlebot.com',
+        }
+    
+    def normalize_url(url):
+        return url if url.endswith('/') else url + '/'
+
+    def extract_links_from_xml(content):
+        soup = BeautifulSoup(content, "lxml-xml")
+        urls = [normalize_url(loc.string) for loc in soup.select("urlset url loc")]
+        sitemap_links = [normalize_url(sitemap_loc.string) for sitemap_loc in soup.select("sitemapindex sitemap loc")]
+        return urls, sitemap_links
+
+    def extract_links_from_html(content):
+        soup = BeautifulSoup(content, "html.parser")
+        urls = [normalize_url(urljoin(sitemap_url, link.get("href"))) for link in soup.find_all("a")]
+        return urls
+
+    def is_xml(content):
+        return content.startswith('<?xml') or content.startswith('<urlset') or content.startswith('<sitemapindex')
+
+    def fetch_sitemap_content(url):
+        response = requests.get(url,headers=headers)
+        if response.status_code == 200:
+            return response.content.decode("utf-8")
+        return None
+
+    def process_sitemap(url, visited=set()):
+        if url in visited:
+            return set()
+        visited.add(url)
+        content = fetch_sitemap_content(url)
+        if not content:
+            return set()
+
+        sitemap_domain = urlparse(url).netloc
+
+        def is_same_domain(url):
+            return urlparse(url).netloc == sitemap_domain
+
+        def is_web_page(url):
+            extensions_to_exclude = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.ico', '.svg', '.pdf', '.mp3', '.mp4', '.avi', '.mkv', '.wav', '.ogg', '.zip', '.tar', '.gz', '.rar', '.7z', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt', '.rtf', '.csv', '.json', '.xml')
+            return not any(url.endswith(ext+'/') for ext in extensions_to_exclude)
+
+        if is_xml(content):
+            urls, sitemap_links = extract_links_from_xml(content)
+            urls = set(filter(lambda u: is_same_domain(u) and is_web_page(u), urls))
+            for sitemap_link in sitemap_links:
+                urls.update(process_sitemap(sitemap_link, visited))
+            return urls
+        else:
+            return set(filter(lambda u: is_same_domain(u) and is_web_page(u), extract_links_from_html(content)))
+
+    return list(process_sitemap(sitemap_url))
+
 def create_embeddings(sitemap_url, domain_name):
-    # returns Pickle filename
-    r = requests.get(sitemap_url)
-    xml = r.text
-    raw = xmltodict.parse(xml)
+    url_list = get_all_links_from_sitemap_v2(sitemap_url)
 
     data = []
-    for info in raw['urlset']['url']:
-        # info example: {'loc': 'https://www.paepper.com/...', 'lastmod': '2021-12-28'}
-        url = info['loc']
+    for url in url_list:
         if domain_name in url:
+            print(url)
             data.append(extract_data_from(url))
     
     chunked_data = chunkify(data)
@@ -121,45 +175,36 @@ def create_embeddings(sitemap_url, domain_name):
 
 
 
-class QAchain:
-    CONDENSE_PROMPT = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
-    Chat History:
-    {chat_history}
-    Follow Up Input: {question}
-    Standalone question:"""
+CONDENSE_PROMPT = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
+Chat History:
+{chat_history}
+Follow Up Input: {question}
+Standalone question:"""
 
-    QA_PROMPT = """You are a helpful AI assistant. Use the following pieces of context to answer the question at the end.
-    If you don't know the answer, just say you don't know. DO NOT try to make up an answer.
-    If the question is not related to the context, politely respond that you are tuned to only answer questions that are related to the context.
-    ####
-    Context: {context}
-    Question: {question}
-    Helpful answer in markdown:"""
+QA_PROMPT = """You are a helpful AI assistant. Use the following pieces of context to answer the question at the end.
+If you don't know the answer, just say you don't know. DO NOT try to make up an answer.
+If the question is not related to the context, politely respond that you are tuned to only answer questions that are related to the context.
+####
+Context: {context}
+Question: {question}
+Helpful answer:"""
 
-    def __init__(self, namespace):
-        self.index = index
-        self.namespace = namespace
-        self.message_counter = 0 
-        self.messages = [{"role": "system", "content": "You are a helpful assistant."}]
-        self.messages_tracker = [{"role": "system", "content": "You are a helpful assistant."}]
-        print("QA Chain Started for namespace", self.namespace)
+ASK_MESSAGE = {"role": "system", "content": "You are a helpful assistant."}
 
-
-    def get_source_documents(self, query: str):
+def get_source_documents(query, namespace):
         embed_model = "text-embedding-ada-002"
         res = openai.Embedding.create(input=[query], engine=embed_model)
         xq = res['data'][0]['embedding']
         top_k = 4
-        pinecone_results = self.index.query(xq, top_k=top_k, namespace=self.namespace, include_metadata=True)
-        #print(pinecone_results['matches'])
+        pinecone_results = index.query(xq, top_k=top_k, namespace=namespace, include_metadata=True)
         contexts = [x['metadata']['text'] for x in pinecone_results['matches']]
         return contexts
 
-    def get_answer(self, user_query: str):
-        # Check if it's a follow-up question (i.e., not the first user message)
-        if self.message_counter >= 2:
+def get_answer(question, internal_messages, namespace):
+    # Check if it's a follow-up question (i.e., not the first user message)
+        if len(internal_messages) >= 2:
             chat_history = ""
-            for message in self.messages_tracker:
+            for message in internal_messages:
                 if message['role']!='system':
                     chat_history += f"{message['role'].capitalize()}: {message['content']}\n"
             # print("Chat history: ",chat_history,"\n")
@@ -167,39 +212,30 @@ class QAchain:
                 model="gpt-3.5-turbo",
                 max_tokens=350,
                 temperature=0.1,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": self.CONDENSE_PROMPT.format(chat_history=chat_history, question=user_query)}
-                ]
+                messages= [ASK_MESSAGE] + [{"role": "user", "content": CONDENSE_PROMPT.format(chat_history=chat_history, question=question)}]
             )
             standalone_question = condense_res["choices"][0]["message"]["content"]
             # print("Standalone_question: ",standalone_question,"\n")
             
         else:
             # If it's not a follow-up question, use the user_query directly
-            standalone_question = user_query
+            standalone_question = question
 
         # Retrieve source documents
-        source_documents = self.get_source_documents(standalone_question)
+        source_documents = get_source_documents(standalone_question, namespace)
         # print("Context: "+"\n"+source_documents+"\n")
 
-        self.messages_tracker.append({"role": "user", "content": standalone_question})
+        internal_messages.append({"role": "user", "content": standalone_question})
 
         # Generate an answer using the QA_PROMPT and the retrieved context
         answer_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages = self.messages + [{"role": "user", "content": self.QA_PROMPT.format(context='\n'.join(source_documents), question=standalone_question)}]
+            messages = [ASK_MESSAGE] + [{"role": "user", "content": QA_PROMPT.format(context='\n'.join(source_documents), question=standalone_question)}]
         )
 
         answer = answer_res["choices"][0]["message"]["content"]
-        self.messages_tracker.append({"role": "assistant", "content": answer})
-        # print("messages_tracker: ",self.messages_tracker,"\n")
-        return answer
-    
-    def ask(self, question):
-        self.message_counter += 1
-        response = self.get_answer(question)
-        return response
-    
-    def __del__(self):
-        print("QA Chain Closed")
+        internal_messages.append({"role": "assistant", "content": answer})
+        return {
+            'answer': answer,
+            'internal_messages':internal_messages
+        }

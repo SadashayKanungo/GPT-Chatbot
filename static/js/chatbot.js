@@ -7,7 +7,6 @@ let has_been_opened = false
 // create the chat button element
 const chatButton = document.createElement('div')
 // apply styles to the chat button
-chatButton.setAttribute('id', 'chatbase-bubble-button')
 chatButton.style.position = 'fixed'
 chatButton.style.bottom = '20px'
 chatButton.style.right = '20px'
@@ -63,7 +62,6 @@ chatButton.addEventListener('click', () => {
 
 
 const chat = document.createElement('div')
-chat.setAttribute('id', 'chatbase-bubble-window')
 
 chat.style.position = 'fixed'
 chat.style.flexDirection = 'column'
@@ -104,8 +102,20 @@ const getChatbot = async () => {
   var l = document.createElement('a');
   l.href = document.currentScript.src;
   const bot_url = `${l.protocol}//${l.host}/bot?id=${bot_id}`;
-  chat.innerHTML = `<iframe id="chatbot_widget" src="${bot_url}" width="100%" height="100%" frameborder="0""></iframe>`
-  // chat.innerHTML = `<iframe id="chatbot_widget" src="http://localhost:3000?id=${qa_chain_id}" width="100%" height="100%" frameborder="0"></iframe>`
+  chat.innerHTML = `<iframe id="gpt-chatbot-iframe" src="${bot_url}" width="400px" height="500px" frameborder="0""></iframe>`
+  // chat.innerHTML = `<iframe id="gpt-chatbot-iframe" src="http://localhost:3000?id=${qa_chain_id}" width="100%" height="100%" frameborder="0"></iframe>`
+  
+  var mql = window.matchMedia("(max-width: 767px)")
+  mql.addEventListener("change", () => {
+    var iframe = document.getElementById('gpt-chatbot-iframe');
+    if (media.matches) { // If media query matches
+      iframe.style.width = "90%";
+      iframe.style.height = "80%";
+    } else {
+      iframe.style.width = "400px";
+      iframe.style.height = "500px";
+    }
+  });
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   chatButton.style.backgroundColor = CHAT_BUTTON_BACKGROUND_COLOR

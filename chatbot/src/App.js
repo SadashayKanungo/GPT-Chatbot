@@ -9,12 +9,12 @@ import config from './config.js';
 import MessageParser from './MessageParser.js';
 import ActionProvider from './ActionProvider.js';
 
-const urlParams = new URLSearchParams(window.location.search);
-const bot_id = urlParams.get('id');
-const base_url = `${window.location.protocol}//${window.location.host}`;
+// const urlParams = new URLSearchParams(window.location.search);
+// const bot_id = urlParams.get('id');
+// const base_url = `${window.location.protocol}//${window.location.host}`;
 
-// const bot_id = "7fc1aaf1bf924cb081bdeb5e554bf990";
-// const base_url = `http://localhost:5000`;
+const bot_id = "c3247c990b8b4500b265dbd049ef5f09";
+const base_url = `http://localhost:5000`;
 
 function App() {
   const [data, setData] = useState({qa_chain_id:null, messages:null});
@@ -35,11 +35,11 @@ function App() {
   }, []);
 
   if (isLoading) {
-    return <p style={{"color":"yellow"}}>Loading...</p>;
+    return <div className='App'><strong style={{"color":"yellow"}}>Loading...</strong></div>;
   }
 
   if (error) {
-    return <p style={{"color":"red"}}>Error: {error.message}</p>;
+    return <div className='App'><strong style={{"color":"red"}}>Error: {error.message}</strong></div>;
   }
 
   const getInitialMessages = (config_messages, data_messages) => {
@@ -53,18 +53,19 @@ function App() {
   }
   
   return (
+    
     <div className="App">
-      <header className='App-header'>
-        <Chatbot
-          config={{
-            ...config,
-            initialMessages: getInitialMessages(config.initialMessages, data.messages),
-          }}
-          messageParser={MessageParser}
-          actionProvider= {(props) => <ActionProvider {...props} ask_url={`${base_url}/chat/ask?id=${data.qa_chain_id}`} />}
-        />
-        </header>
-      </div>
+      <Chatbot
+        config={{
+          ...config,
+          initialMessages: getInitialMessages(config.initialMessages, data.messages),
+        }}
+        messageParser={MessageParser}
+        actionProvider= {(props) => <ActionProvider {...props} ask_url={`${base_url}/chat/ask?id=${data.qa_chain_id}`} />}
+      />
+    </div>
+    
+    
   );
 }
 

@@ -6,7 +6,6 @@ JWT_CSRF_CHECK_FORM = True
 JWT_CSRF_IN_COOKIES = False 
 
 CHATBOT_STATIC_PATH = 'chatbot/build'
-CHATBOT_SCRIPT_DIR = 'cdn'
 CHATBOT_SCRIPT_FILE = 'chatbot.js'
 
 PLAN_LIMITS = {

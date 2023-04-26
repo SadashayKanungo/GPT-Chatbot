@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from gpt3 import create_embeddings, QAchain
+from gpt3 import create_embeddings, get_answer
 
 sitemap_url = 'https://www.ecochunk.com/sitemap.xml'
 domain_name = 'ecochunk.com'
@@ -15,14 +15,13 @@ print(namespace)
 # namespace = 'brandinformers-complete-v4'
 # namespace = 'victoriousseocomservices1681755721799'
 
-qa = QAchain(namespace)
 
 print("Start Chat")
 while True:
     print("Q: ", end='')
     q = input()
-    a = qa.ask(q)
-    print("A: ", a)
+    a = get_answer(q, [], namespace)
+    print("A: ", a['answer'])
 
 
 # Does Almond Joy have dark chocolate?

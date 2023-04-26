@@ -29,7 +29,9 @@ index = pinecone.Index(index_name)
 embed_model = "text-embedding-ada-002"
 
 def extract_data_from(url):
-    html = requests.get(url).text
+    html = requests.get(url, headers={
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"
+    }).text
     soup = BeautifulSoup(html, features="html.parser")
     raw_text = soup.get_text()
     lines = (line.strip() for line in raw_text.splitlines())
@@ -90,14 +92,13 @@ def chunkify(data):
         clean_text = post["text"].replace('\n', ' ')
         clean_text = re.sub(r' +', ' ', clean_text)
         clean_text = re.sub(r'^[ \t]*\n', '', clean_text, flags=re.MULTILINE)
-
         text_chunks = split_text(clean_text, chunk_size=8, overlap=2)
-        
         for chunk in text_chunks:
             new_post = post.copy()
             new_post["text"] = chunk
-            new_post["id"] = f"{len(chunked_data):010d}"
             chunked_data.append(new_post)
+    for idx, item in enumerate(chunked_data):
+        item['id'] = f"{item['url']}#{idx}"
     return chunked_data
 
 def get_all_links_from_sitemap_v2(sitemap_url):
@@ -165,7 +166,7 @@ def create_embeddings(sitemap_url, domain_name):
         if domain_name in url:
             print(url)
             data.append(extract_data_from(url))
-    
+    print(data)
     chunked_data = chunkify(data)
     print("Chunked data ", len(chunked_data))
     new_namespace = ''.join([c for c in domain_name if c.isalnum()]) + str(round(time.time()*1000))
@@ -173,7 +174,8 @@ def create_embeddings(sitemap_url, domain_name):
     print(new_namespace, "Upload successful")
     return new_namespace
 
-
+def delete_embeddings(namespace):
+    index.delete(delete_all=True, namespace=namespace)
 
 CONDENSE_PROMPT = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
 Chat History:

@@ -11,7 +11,7 @@ import os
 
 load_dotenv()
 
-from gpt3 import create_embeddings, get_answer
+from gpt3 import create_embeddings, delete_embeddings, get_answer
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -23,8 +23,11 @@ CORS(app)
 
 client = MongoClient(os.getenv("MONGODB_URL"))
 db = client.gpt_chatbot
-# db.chats.ensure_index("last_access", expireAfterSeconds=app.config['CHAT_RETAIN_TIME'])
-db.chats.create_index("last_access", expireAfterSeconds=app.config['CHAT_RETAIN_TIME'])
+if 'last_access_1' in db.chats.index_information():
+    current_expire_seconds = db.chats.index_information()['last_access_1']['expireAfterSeconds']
+    if current_expire_seconds != app.config['CHAT_RETAIN_TIME']:
+        db.chats.drop_index('last_access_1')
+        db.chats.create_index("last_access", expireAfterSeconds=app.config['CHAT_RETAIN_TIME'])
 
 stripe_keys = {
     "secret_key": os.environ["STRIPE_SECRET_KEY"],
@@ -34,8 +37,6 @@ stripe_keys = {
     "endpoint_secret": os.environ["STRIPE_ENDPOINT_SECRET"],
 }
 stripe.api_key = stripe_keys["secret_key"]
-
-# running_chains = dict()
 
 # JWT and Login Helpers
 @jwt.user_identity_loader
@@ -127,6 +128,18 @@ def account():
 
     return render_template('account.html', user=current_user)
 
+@app.route('/chatbot/')
+@jwt_required()
+def chabot():
+    bot_id = request.args.get('id')
+    bot = db.chatbots.find_one({'_id':bot_id})
+    if not bot:
+        return jsonify({ "error": "Chatbot Not Found" }), 404
+    if not current_user['token'] or bot['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+
+    return render_template('chatbot.html', user=current_user, bot=bot)
+
 @app.route('/bot/', defaults={'path': ''})
 @app.route('/bot/<path:path>')
 def serve(path):
@@ -142,13 +155,13 @@ def get_script_response(bot_id, base_url):
     script_response = script_response.replace("CHATBOT_SCRIPT_URL", f'{base_url}static/js/{app.config["CHATBOT_SCRIPT_FILE"]}')
     return script_response
 
-# Bot Functioning Routes
+# Bot Routes
 @app.route('/newbot/', methods=['POST'])
 @jwt_required()
 def generate_new_bot():
     user_bot_count = db.chatbots.count_documents({"owner":current_user['_id']})
     if user_bot_count >= app.config["PLAN_LIMITS"][current_user['plan']]:
-        return jsonify({ "error": "Plan Limit reached" }), 501
+        return jsonify({ "error": "Plan Limit reached" }), 400
 
     bot_name = request.form.get('name')
     sitemap_url = request.form.get('url')
@@ -169,25 +182,40 @@ def generate_new_bot():
         db.chatbots.insert_one(new_bot)
         return jsonify(success=True)
     except:
-        return jsonify({ "error": "Bot Creation Failed" }), 501
+        return jsonify({ "error": "Bot Creation Failed" }), 500
+
+@app.route('/delbot', methods=['GET'])
+@jwt_required()
+def delete_bot():
+    bot_id = request.args.get('id')
+    bot = db.chatbots.find_one(bot_id)
+    if bot['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    try:
+        namespace = bot['namespace']
+        delete_embeddings(namespace)
+        db.chatbots.find_one_and_delete({'_id':bot_id})
+        return jsonify(success=True)
+    except Exception as e:
+        print(e)
+        return jsonify({ "error": "Bot Deletion Failed" }), 500
+
+# Chat Routes
 
 @app.route('/chat/start', methods=['GET'])
 def start_chatbot():
     bot_id = request.args.get('id')
-    ip_addr = str(request.remote_addr)
-    # Check if chat entry with same bot id and ip addr
-    prev_chat = db.chats.find_one({'bot_id':bot_id, 'ip_addr': ip_addr})
-    if prev_chat:
+    cookie_value = request.cookies.get('gptchatbot_cookie')
+    if cookie_value:
         # If yes, update last access and set chat obj to found entry
-        db.chats.find_one_and_update({'_id':prev_chat['_id']}, {'$set': {'last_access': datetime.now(timezone.utc)}})
-        chat = prev_chat
+        chat = db.chats.find_one({'_id':cookie_value})
+        db.chats.find_one_and_update({'_id':chat['_id']}, {'$set': {'last_access': datetime.now(timezone.utc)}})
     else:
         # If not, create new entry and set chat obj to new entry
         bot = db.chatbots.find_one({'_id':bot_id})
         chat = {
             '_id': uuid.uuid4().hex,
             'bot_id': bot_id,
-            'ip_addr': ip_addr,
             'namespace': bot['namespace'],
             'messages': [],
             'internal_messages': [{"role": "system", "content": "You are a helpful assistant."}],
@@ -195,46 +223,30 @@ def start_chatbot():
         }
         db.chats.insert_one(chat)
     
-    # Create qa_chain object from chat
-    # bot = db.chatbots.find_one({'_id':bot_id})
-    # new_qa_chain = QAchain(bot['namespace'], chat['messages'], chat['internal_messages'])
-    # running_chains[chat['_id']] = new_qa_chain
-    return {
+    response = jsonify({
         'qa_chain_id': chat['_id'],
         'messages': chat['messages']
-    }
-
-# @app.route('/chat/close', methods=['GET'])
-# def close_chatbot():
-#     qa_chain_id = request.args.get('id')
-#     qa_chain = running_chains[qa_chain_id]
-#     message_dict = qa_chain.get_messages()
-#     db.chats.find_one_and_update({'_id':qa_chain_id}, {'$set': {
-#         'messages': message_dict['messages'],
-#         'internal_messages': message_dict['internal_messages'],
-#         'last_access': datetime.now(timezone.utc)
-#     }})
-#     running_chains.pop(qa_chain_id)
-#     return "QA Chain Closed"
+    })
+    response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"])
+    return response
 
 @app.route('/chat/ask', methods=['POST'])
 def ask_chatbot():
     qa_chain_id = request.args.get('id')
     qn = request.json['question']
-    # qa_chain = running_chains[qa_chain_id]
-    # ans = qa_chain.ask(qn)
     chat = db.chats.find_one({'_id':qa_chain_id})
-    response = get_answer(qn, chat['internal_messages'], chat['namespace'])
-    updated_messages = chat['messages'] + [{"role":"user", "content":qn}, {"role":"assisstant", "content":response['answer']}]
-    # message_dict = qa_chain.get_messages()
+    ans = get_answer(qn, chat['internal_messages'], chat['namespace'])
+    updated_messages = chat['messages'] + [{"role":"user", "content":qn}, {"role":"assisstant", "content":ans['answer']}]
     db.chats.find_one_and_update({'_id':qa_chain_id}, {'$set': {
         'messages': updated_messages,
-        'internal_messages': response['internal_messages'],
+        'internal_messages': ans['internal_messages'],
         'last_access': datetime.now(timezone.utc)
     }})
-    return {
-        'answer': response['answer']
-    }
+    response = jsonify({
+        'answer': ans['answer']
+    })
+    response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"])
+    return response
 
 # Stripe Endpoints
 
@@ -266,11 +278,6 @@ def create_checkout_session():
 
     try:
         checkout_session = stripe.checkout.Session.create(
-            # you should get the user id here and pass it along as 'client_reference_id'
-            #
-            # this will allow you to associate the Stripe session with
-            # the user saved in your database
-            #
             client_reference_id=current_user['_id'],
             success_url=domain_url + "stripe/success?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=domain_url + "stripe/cancel",

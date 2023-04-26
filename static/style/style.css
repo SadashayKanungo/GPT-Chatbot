@@ -101,9 +101,6 @@ button:focus {
 .icon_laravel:before { content:"\E804"; }
 .icon_statamic:before { content:"\E805"; }
 #features article:before { content:"\E806"; }
-.icon_reporting:before { content:"\E807"; }
-.icon_inventory:before { content:"\E808"; }
-.icon_contacts:before { content:"\E809"; }
 .icon_twitter:before { content:"\E80A"; }
 .icon_github:before { content:"\E80B"; }
 #pricing li:before { content:"\E80C"; }
@@ -603,10 +600,11 @@ main > div .action {
 	transition:left 0s 0.5s, opacity 0.5s;
 }
 
-#features input:nth-of-type(1):checked ~ aside img:nth-of-type(1),
-#features input:nth-of-type(2):checked ~ aside img:nth-of-type(2),
-#features input:nth-of-type(3):checked ~ aside img:nth-of-type(3),
-#features input:nth-of-type(4):checked ~ aside img:nth-of-type(4) {
+#features input:nth-of-type(1):checked ~ aside div:nth-of-type(1),
+#features input:nth-of-type(2):checked ~ aside div:nth-of-type(2),
+#features input:nth-of-type(3):checked ~ aside div:nth-of-type(3),
+#features input:nth-of-type(3):checked ~ aside div:nth-of-type(4),
+#features input:nth-of-type(4):checked ~ aside div:nth-of-type(5) {
 	left:0;
 	opacity:1;
 	transition:opacity 0.5s;
@@ -615,30 +613,33 @@ main > div .action {
 #everydayTasks > div {
 	display:flex;
 	flex-wrap:wrap;
-	gap:2rem;
 	text-align:left;
 }
 
 #everydayTasks article {
 	position:relative;
 	flex-grow:1;
-	width:26%;
-	min-width:min(100%, 15em);
+	width:10%;
+	min-width:min(100%, 3em);
 }
 
+#everydayTasks h2 {
+	text-transform: capitalize;
+	font-weight: bold;
+}
 #everydayTasks h3 {
-	margin-bottom:1rem;
-	line-height:2em;
+	text-align: center;
 }
 
-#everydayTasks h3:before {
-	margin-right:0.5rem;
-}
-
-#everydayTasks input:nth-of-type(1):checked ~ div article:nth-of-type(1) h3:before,
-#everydayTasks input:nth-of-type(2):checked ~ div article:nth-of-type(2) h3:before,
-#everydayTasks input:nth-of-type(3):checked ~ div article:nth-of-type(3) h3:before {
+#everydayTasks input:nth-of-type(1):checked ~ div article:nth-of-type(1) h3,
+#everydayTasks input:nth-of-type(2):checked ~ div article:nth-of-type(2) h3,
+#everydayTasks input:nth-of-type(3):checked ~ div article:nth-of-type(3) h3,
+#everydayTasks input:nth-of-type(4):checked ~ div article:nth-of-type(4) h3,
+#everydayTasks input:nth-of-type(5):checked ~ div article:nth-of-type(5) h3 {
 	color:var(--altColor);
+	border-radius: 10px 10px 0px 0px;
+	border: 3px solid var(--primeColor);
+	border-bottom-color: var(--altColor);
 }
 
 #everydayTasks aside {
@@ -647,22 +648,93 @@ main > div .action {
 	overflow:hidden;
 }
 
-#everydayTasks aside img {
+#everydayTasks aside div {
 	flex-shrink:0;
 	position:relative;
 	display:block;
 	width:100%;
-	height:auto;
+	height:100vh;
+	padding: 60px 0px;
 	left:0;
 	transition:left 0.5s;
 }
 
-#everydayTasks input:nth-of-type(2):checked ~ aside img {
+#everydayTasks input:nth-of-type(2):checked ~ aside div {
 	left:-100%;
 }
-
-#everydayTasks input:nth-of-type(3):checked ~ aside img {
+#everydayTasks input:nth-of-type(3):checked ~ aside div {
 	left:-200%;
+}
+#everydayTasks input:nth-of-type(4):checked ~ aside div {
+	left:-300%;
+}
+#everydayTasks input:nth-of-type(5):checked ~ aside div {
+	left:-400%;
+}
+
+.tab p{
+	margin-top:20px;
+	padding:10px;
+}
+
+
+
+  .tooltip {
+	position: relative;
+	display: inline-block;
+	background-color: var(--highlightColor);
+	border-radius: 10px;
+	padding:10px;
+	width:60%;
+	overflow-x:hidden;
+	font-size: 0.8rem;
+	font-weight: bold;
+  }
+  
+  .tooltiptext {
+	visibility: hidden;
+	width:100%;
+	height:100%;
+	background-color: var(--midColor);
+	color: var(--pureColor);
+	font-size:1rem;
+	display: inline-flex;
+  	align-items: center;
+	justify-content: center;
+	border-radius: 10px;
+	padding: 10px 0;
+	opacity:0.8;
+	/* Position the tooltip */
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+  }
+
+  .tooltip:hover{
+	cursor: pointer;
+  }
+  
+  .tooltip:hover .tooltiptext{
+	visibility: visible;
+  }
+
+  #delete_btn{
+	padding:0.5rem 1rem;
+	border-radius:1.25rem;
+	border-color: var(--highlightColor);
+	transition:background-color 0.3s;
+	font-weight:bold;
+	background-color: var(--red-translucent);
+	color: var(--pureColor);
+	margin-bottom: 30px;
+  }
+  #delete_btn:hover{
+	background-color: var(--red);
+  }
+#delete_btn:focus {
+	outline:none;
+	box-shadow:0 0 0.25rem 0.125rem var(--red-translucent);
 }
 
 #testimonials,
@@ -1218,3 +1290,5 @@ form.onPageForm footer button:hover {
 	margin-left:10px;
 	margin-right: 50px;
   }
+
+  /*=========================================================================================================*/

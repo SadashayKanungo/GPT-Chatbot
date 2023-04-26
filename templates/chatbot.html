@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div id="top">
+
+  <header>
+    <h1><a href="/" class="icon_logo"><i>{{ user['name'] }}</i></a></h1>
+    <a href="#mainMenu" class="openMainMenu" hidden></a>
+    <nav id="mainMenu">
+      <a href="#" class="modalClose" hidden></a>
+      <ul>
+        <li hidden><a href="#" class="modalClose">Exit Menu</a></li>
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li class="alternate featured"><a href="/user/signout">Sign Out</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+
+    <section id="everydayTasks">
+
+      <header>
+        <h2>{{bot['name']}}</h2>
+      </header>
+
+      <input hidden id="radio_2_chatbot" name="imgRadioTasks" type="radio" checked>
+      <input hidden id="radio_2_settings" name="imgRadioTasks" type="radio">
+      <input hidden id="radio_2_sources" name="imgRadioTasks" type="radio">
+      <input hidden id="radio_2_embed" name="imgRadioTasks" type="radio">
+      <input hidden id="radio_2_delete" name="imgRadioTasks" type="radio">
+
+      <div>
+        <article>
+          <heading>
+            <h3>Chatbot</h3>
+          </heading>
+          <label for="radio_2_chatbot"></label>
+        </article><article>
+          <heading>
+            <h3>Settings</h3>
+          </heading>
+          <label for="radio_2_settings"></label>
+        </article><article>
+          <heading>
+            <h3>Data Sources</h3>
+          </heading>
+          <label for="radio_2_sources"></label>
+        </article><article>
+          <heading>
+            <h3>Embed on Website</h3>
+          </heading>
+          <label for="radio_2_embed"></label>
+        </article><article>
+          <heading>
+            <h3>Delete Chatbot</h3>
+          </heading>
+          <label for="radio_2_delete"></label>
+        </article>
+      </div>
+
+      <aside>
+        <div>
+          <iframe id="chatbot_widget" src="/bot?id={{bot['_id']}}" width="400px" height="500px"  frameborder="0"></iframe>
+        </div>
+
+        <div class="tab">Settings</div>
+
+        <div class="tab">
+          
+            <p>Sitemap URL : <code>{{bot['sitemap_url']}}</code></p><br>
+            <p>Domain Name : <code>{{bot['domain_name']}}</code></p><br>
+          
+        </div>
+
+        <div class="tab">
+          <p>To add the chatbot any where on your website, add this iframe to your html code.</p>
+          <p id="iframe-box" class="tooltip">
+            <code id="iframe-val">{{bot['script']}}</code>
+            <span id="iframe-tooltip-text" class="tooltiptext">Click to copy</span>
+          </p>
+          <p>To add a chat bubble to the bottom right of your website add this script tag to your html.</p><br>
+          <p id="script-box" class="tooltip">
+            <code id="script-val">{{bot['script']}}</code>
+            <span id="script-tooltip-text" class="tooltiptext">Click to copy</span>
+          </p>
+          
+        </div>
+
+        <div class="tab">
+          <p>This is an irreversible action.<br>Confirm Deletion of Bot : <strong>{{bot['name']}}</strong></p><br>
+          <button id="delete_btn" data-id="{{bot['_id']}}">Delete</button>
+          <p id ="delete_err" class="error error--hidden"></p>
+        </div>
+      </aside>
+
+    <!-- #everydayTasks --></section>
+
+  </main>
+
+  <footer>
+    <h2 class="icon_logo">GPT<span>Chatbot</span></h2>
+    <ul class="onPageLinks">
+        <li><a href="/dashboard">Dashboard</a></li>
+    </ul>
+    <p>
+      &copy; 2023 GPTChatbot. All rights reserved.
+    </p>
+    <ul class="socialLinks">
+      <li>
+        <a href="#" class="icon_twitter">
+          <span>Twitter</span>
+        </a>
+      </li><li>
+        <a href="#" class="icon_github">
+          <span>Github</span>
+        </a>
+      </li>
+    </ul>
+  </footer>
+
+</div>
+
+{% endblock %}

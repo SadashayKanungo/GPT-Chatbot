@@ -31,7 +31,7 @@
       <div class="bot-box">
       {% for bot in bots %}
       <div class="bot-card">
-        <a href="#modal{{bot['_id']}}" class="bot-card-link">
+        <a href="/chatbot?id={{bot['_id']}}" class="bot-card-link">
           <div class="bot-card-bg"></div>
   
           <div class="bot-card-title">
@@ -45,21 +45,6 @@
           </div>
         </a>
       </div>
-
-      <div class="modal2" id="modal{{bot['_id']}}">
-        <div class="modal2-content">
-          <a href="#" class="modal2-close" title="Close Modal">&#10006;</a>
-          <h3>{{bot['name']}}</h3>
-          <div class="modal2-area">
-            <p>Sitemap URL : <code>{{bot['sitemap_url']}}</code></p><br>
-            <p>Domain Name : <code>{{bot['domain_name']}}</code></p><br>
-            <p>Script : </p>
-            <div class="code">{{bot['script']}}</div>
-          </div>
-        </div>
-      </div>
-            
-
       {% endfor %}
     </div>
 

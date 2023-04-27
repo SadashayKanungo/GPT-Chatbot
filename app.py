@@ -233,7 +233,7 @@ def select_url_in_source():
     source['urls'][index]['selected'] = True
     sel_no = source['selected_nos'] + 1
     db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls'], 'selected_nos':sel_no}})
-    return render_template('source.html', user=current_user, source=source, csrf_token=get_csrf_token(current_user['token']))
+    return jsonify(success=True)
 
 @app.route('/source/deselect', methods=['GET'])
 @jwt_required()
@@ -252,7 +252,7 @@ def deselect_url_in_source():
     source['urls'][index]['selected'] = False
     sel_no = source['selected_nos'] - 1
     db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls'], 'selected_nos':sel_no}})
-    return render_template('source.html', user=current_user, source=source, csrf_token=get_csrf_token(current_user['token']))
+    return jsonify(success=True)
 
 @app.route('/source/add', methods=['POST'])
 @jwt_required()
@@ -272,7 +272,7 @@ def add_url_in_source():
                 'selected':False
             })
     db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls']}})
-    return render_template('source.html', user=current_user, source=source, csrf_token=get_csrf_token(current_user['token']))
+    return jsonify(success=True)
 
 @app.route('/source/submit', methods=['GET'])
 @jwt_required()

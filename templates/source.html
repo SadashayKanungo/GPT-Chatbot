@@ -29,56 +29,61 @@
         Click SUBMIT to create your GPT Chatbot.</p>
 
         <section class="source_container">
-        <h3>Selected URLs</h3>
-        {% for url in source['urls'] %}
-            {% if url['selected'] == true %}
-              <div class="source_link">
-                <a href="/source/deselect?id={{source['_id']}}&index={{url['index']}}">&#10060;</a>
-                <span>{{url['url']}}</span>
-              </div>
-              <br>
-            {% endif %}
-            
-        {% endfor %}
+          <h3>Available URLs</h3>
+          <table class="source_table">
+            {% for url in source['urls'] %}
+              {% if url['selected'] == false %}
+                <tr class="source_link_row">
+                  <td class="source_link_text">{{url['url']}}</td>
+                  <td class="source_link_btn"><button class="source_action" data-action="select" data-id="{{source['_id']}}" data-index="{{url['index']}}">&#9989;</button></td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </table>
+          <p id="source_select_err" class="error error--hidden"></p>
         </section>
         <br>
-        <section class="onPageButton">
-        <p id="source_submit_error" class="error error--hidden"></p>
-        <button id="source_submit_btn" data-id="{{source['_id']}}">
-          <span id="source_submit_btn_text">Submit</span> <span id="source_submit_btn_loader" class="loader loader--hidden"></span> 
-        </button>
-        </section>
-        <br>
-        <section class="source_container">
-        <h3>Available URLs</h3>
-        {% for url in source['urls'] %}
-            {% if url['selected'] == false %}
-              <div class="source_link">
-                <a href="/source/select?id={{source['_id']}}&index={{url['index']}}">&#9989;</a>
-                <span>{{url['url']}}</span>
-              </div>
-              <br>
-            {% endif %}
-            
-        {% endfor %}
-        </section>
 
         <section>
-        <h3>Add a URL</h3>
-        <form class="onPageForm"  action="/source/add?id={{source['_id']}}" method="post">
-          <fieldset>
+          <h3>Add a URL</h3>
+          <form class="onPageForm"  name="source_add_form" data-id="{{source['_id']}}">
+            <p id="source_add_err" class="error error--hidden"></p>
+            <fieldset>
             <input type="hidden" name="csrf_token" value={{csrf_token}}>
-
-            <label for="url">Enter URL: </label>
+            <label>Enter URL: </label>
             <input type="url" name="url" width="60%"/>
-          </fieldset>
-          
-          <footer>
-            <button type="submit">Add</button>
-          </footer>
-        </form>
+            </fieldset>
+            <footer>
+              <button type="submit">Add</button>
+            </footer>
+          </form>
         </section>
         <br>
+
+        <section class="source_container">
+          <h3>Selected URLs</h3>
+          <table class="source_table">
+            {% for url in source['urls'] %}
+              {% if url['selected'] == true %}
+                <tr class="source_link_row">
+                  <td class="source_link_text">{{url['url']}}</td>
+                  <td class="source_link_btn"><button class="source_action" data-action="deselect" data-id="{{source['_id']}}" data-index="{{url['index']}}">&#10060;</button></td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </table>
+          <p id="source_deselecterr_err" class="error error--hidden"></p>
+        </section>
+        <br>
+
+        <section class="onPageButton">
+          <p id="source_submit_error" class="error error--hidden"></p>
+          <button id="source_submit_btn" data-id="{{source['_id']}}">
+            <span id="source_submit_btn_text">Submit</span> <span id="source_submit_btn_loader" class="loader loader--hidden"></span> 
+          </button>
+        </section>
+        <br>
+        
       </header>
     <!-- #testimonials --></section>
 

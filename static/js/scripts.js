@@ -1,3 +1,4 @@
+// Forms
 $("form[name=signup_form").submit(function(e) {
 
   var $form = $(this);
@@ -92,24 +93,41 @@ $("form[name=bot_source_form").submit(function(e) {
     dataType: "json",
     success: function(resp) {
       console.log(resp);
-      window.location.reload();
+      document.location.reload(true);
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
-    },
-    beforeSend: function () {
-      $("#submit").addClass('loader--hidden');
-      $('#loader').removeClass('loader--hidden');
-    },
-    complete: function (response) {
-      $('#loader').addClass('loader--hidden');
-      $('#submit').removeClass('loader--hidden');
     }
   });
 
   e.preventDefault();
 });
 
+$("form[name=source_add_form").submit(function(e) {
+
+  var $form = $(this);
+  var $error = $form.find(".error");
+  var data = $form.serialize();
+  var source_id = $form.attr("data-id");
+  
+    $.ajax({
+    url: `/sources/add?id=${source_id}`,
+    type: "POST",
+    data: data,
+    dataType: "json",
+    success: function(resp) {
+      console.log(resp);
+      document.location.reload(true);
+    },
+    error: function(resp) {
+      $error.text(resp.responseJSON.error).removeClass("error--hidden");
+    }
+  });
+
+  e.preventDefault();
+});
+
+// Loader Buttons
 $("#source_submit_btn").click(function(e) {
   var $error = $("#source_submit_error")
   var $btn = $(this);
@@ -147,7 +165,7 @@ $("#bot_regen_btn").click(function(e) {
     type: "GET", // HTTP method
     success: function(data) {
       // Redirect to a new page on successful API call
-      window.location.href = `/chatbot?id=${bot_id}`;
+      window.location.href = `/dashboard`;
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
@@ -164,8 +182,8 @@ $("#bot_regen_btn").click(function(e) {
   e.preventDefault();
 });
 
-$("#delete_btn").click(function(e) {
-  var $error = $("#delete_err")
+$("#bot_delete_btn").click(function(e) {
+  var $error = $("#bot_delete_err")
   var $btn = $(this);
   var bot_id = $btn.attr("data-id")
   // Perform AJAX call
@@ -183,6 +201,55 @@ $("#delete_btn").click(function(e) {
   e.preventDefault();
 });
 
+// Link Edit Buttons
+$("button.source_action").click(function(e){
+  var $btn = $(this);
+  var id = $btn.attr('data-id');
+  var index = $btn.attr('data-index');
+  var action = $btn.attr('data-action');
+  var $error = $(`#source_${action}_err`)
+  // Perform AJAX call
+  $.ajax({
+    url: `/source/${action}?id=${id}&index=${index}`, // URL of the API endpoint
+    type: "GET", // HTTP method
+    success: function(data) {
+      // Redirect to a new page on successful API call
+      document.location.reload(true);
+    },
+    error: function(resp) {
+      $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
+    }
+  });
+  e.preventDefault();
+});
+
+$("button.bot_src_del").click(function(e){
+  var $btn = $(this);
+  var id = $btn.attr('data-id');
+  var index = $btn.attr('data-index');
+  var $error = $(`#bot_src_del_err`)
+  // Perform AJAX call
+  $.ajax({
+    url: `/editbot/sources/drop?id=${id}&index=${index}`, // URL of the API endpoint
+    type: "GET", // HTTP method
+    success: function(data) {
+      // Redirect to a new page on successful API call
+      document.location.reload(true);
+    },
+    error: function(resp) {
+      $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
+    }
+  });
+  e.preventDefault();
+});
+
+// Click to copy
 document.getElementById("script-box").addEventListener("click", function() {
   var copyText = document.getElementById("script-val");
   navigator.clipboard.writeText(copyText.innerText)

@@ -25,9 +25,9 @@
         <h2>{{bot['name']}}</h2>
       </header>
 
-      <input hidden id="radio_2_chatbot" name="imgRadioTasks" type="radio" checked>
+      <input hidden id="radio_2_chatbot" name="imgRadioTasks" type="radio">
       <input hidden id="radio_2_settings" name="imgRadioTasks" type="radio">
-      <input hidden id="radio_2_sources" name="imgRadioTasks" type="radio">
+      <input hidden id="radio_2_sources" name="imgRadioTasks" type="radio" checked>
       <input hidden id="radio_2_embed" name="imgRadioTasks" type="radio">
       <input hidden id="radio_2_delete" name="imgRadioTasks" type="radio">
 
@@ -69,25 +69,25 @@
         <div class="tab">Settings</div>
 
         <div class="tab">
-          
           <section class="source_container">
-            <h3>Sources</h3>
-            {% for url in bot['sources'] %}
-                  <span class="source_link">
-                    <a href="/editbot/sources/drop?id={{bot['_id']}}&index={{loop.index0}}">&#10060;</a>
-                    <span>{{url}}</span>
-                  </span>
-                  <br>                
-            {% endfor %}
+            <h3>Source URLs</h3>
+            <table class="source_table">
+              {% for url in bot['sources'] %}
+                <tr class="source_link_row">
+                  <td class="source_link_text">{{url}}</td>
+                  <td class="source_link_btn"><button class="bot_src_del" data-id="{{bot['_id']}}" data-index="{{loop.index0}}">&#10060;</button></td>
+                </tr>
+              {% endfor %}
+            </table>
+            <p id="bot_src_del_err" class="error error--hidden"></p>
           </section>
-          <br>
+
           <section class="onPageButton">
           <p id="bot_regen_error" class="error error--hidden"></p>
           <button id="bot_regen_btn" data-id="{{bot['_id']}}">
             <span id="bot_regen_btn_text">Regenerate</span> <span id="bot_regen_btn_loader" class="loader loader--hidden"></span> 
           </button>
           </section>
-          <br>
     
           <section>
           <h3>Add a URL</h3>
@@ -123,8 +123,8 @@
 
         <div class="tab">
           <p>This is an irreversible action.<br>Confirm Deletion of Bot : <strong>{{bot['name']}}</strong></p><br>
-          <button id="delete_btn" data-id="{{bot['_id']}}">Delete</button>
-          <p id ="delete_err" class="error error--hidden"></p>
+          <button id="bot_delete_btn" data-id="{{bot['_id']}}">Delete</button>
+          <p id ="bot_delete_err" class="error error--hidden"></p>
         </div>
       </aside>
 

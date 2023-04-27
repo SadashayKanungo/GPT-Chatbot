@@ -11,7 +11,7 @@ import os
 
 load_dotenv()
 
-from gpt3 import create_embeddings, delete_embeddings, get_answer
+from gpt3 import get_urls_from_sitemap, create_embeddings, delete_embeddings, get_answer
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -28,6 +28,11 @@ if 'last_access_1' in db.chats.index_information():
     if current_expire_seconds != app.config['CHAT_RETAIN_TIME']:
         db.chats.drop_index('last_access_1')
         db.chats.create_index("last_access", expireAfterSeconds=app.config['CHAT_RETAIN_TIME'])
+if 'created_at_1' in db.sources.index_information():
+    current_expire_seconds = db.sources.index_information()['created_at_1']['expireAfterSeconds']
+    if current_expire_seconds != app.config['SOURCES_RETAIN_TIME']:
+        db.sources.drop_index('created_at_1')
+        db.sources.create_index("created_at_1", expireAfterSeconds=app.config['SOURCES_RETAIN_TIME'])
 
 stripe_keys = {
     "secret_key": os.environ["STRIPE_SECRET_KEY"],
@@ -117,7 +122,7 @@ def dashboard():
     if not current_user['token']:
         return jsonify({ "error": "Not Authorized" }), 401
 
-    bots = db.chatbots.find({'owner':current_user['_id']})
+    bots = db.bots.find({'owner':current_user['_id']})
     return render_template('dashboard.html', user=current_user, bots=bots, csrf_token=get_csrf_token(current_user['token']))
 
 @app.route('/account/')
@@ -132,13 +137,13 @@ def account():
 @jwt_required()
 def chabot():
     bot_id = request.args.get('id')
-    bot = db.chatbots.find_one({'_id':bot_id})
+    bot = db.bots.find_one({'_id':bot_id})
     if not bot:
         return jsonify({ "error": "Chatbot Not Found" }), 404
     if not current_user['token'] or bot['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
 
-    return render_template('chatbot.html', user=current_user, bot=bot)
+    return render_template('chatbot.html', user=current_user, bot=bot, csrf_token=get_csrf_token(current_user['token']))
 
 @app.route('/bot/', defaults={'path': ''})
 @app.route('/bot/<path:path>')
@@ -155,50 +160,224 @@ def get_script_response(bot_id, base_url):
     script_response = script_response.replace("CHATBOT_SCRIPT_URL", f'{base_url}static/js/{app.config["CHATBOT_SCRIPT_FILE"]}')
     return script_response
 
-# Bot Routes
-@app.route('/newbot/', methods=['POST'])
+# Source Routes
+@app.route('/source/')
 @jwt_required()
-def generate_new_bot():
-    user_bot_count = db.chatbots.count_documents({"owner":current_user['_id']})
-    if user_bot_count >= app.config["PLAN_LIMITS"][current_user['plan']]:
-        return jsonify({ "error": "Plan Limit reached" }), 400
+def source():
+    source_id = request.args.get('id')
+    source = db.sources.find_one({'_id':source_id})
+    if not source:
+        return jsonify({ "error": "Source Not Found" }), 404
+    if not current_user['token'] or source['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
 
+    return render_template('source.html', user=current_user, source=source, csrf_token=get_csrf_token(current_user['token']))
+
+@app.route('/newsource', methods=['POST'])
+@jwt_required()
+def get_sources():
+    user_bot_count = db.bots.count_documents({"owner":current_user['_id']})
+    if user_bot_count >= app.config["PLAN_LIMITS"][current_user['plan']]['bots']:
+        return jsonify({ "error": "Plan Limit Reached" }), 400
+    
     bot_name = request.form.get('name')
     sitemap_url = request.form.get('url')
     domain_name = request.form.get('domain')
-    
-    try:
-        namespace = create_embeddings(sitemap_url, domain_name)
+    sources_limit = app.config["PLAN_LIMITS"][current_user['plan']]['sources']
 
-        new_bot = {
-            '_id': uuid.uuid4().hex,
-            'name': bot_name,
+    try:
+        parsed_urls = get_urls_from_sitemap(sitemap_url, domain_name)
+        if not parsed_urls:
+            return jsonify({'error':'No URLs Found'}), 500
+        urls = []
+        for i in range(len(parsed_urls)):
+            urls.append({
+                'index':i,
+                'url':parsed_urls[i],
+                'selected':(i<sources_limit)
+            })
+
+        new_source = {
+            '_id':uuid.uuid4().hex,
+            'owner': current_user['_id'],
+            'bot_name': bot_name,
             'sitemap_url': sitemap_url,
             'domain_name': domain_name,
+            'limit':sources_limit,
+            'urls': urls,
+            'selected_nos': min(sources_limit, len(urls)),
+            'created_at': datetime.now(timezone.utc),
+        }
+        db.sources.insert_one(new_source)
+        return jsonify({'id':new_source['_id']}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'error':'Could Not Process Sitemap'}), 500
+
+@app.route('/source/select', methods=['GET'])
+@jwt_required()
+def select_url_in_source():
+    source_id = request.args.get('id')
+    index = int(request.args.get('index'))
+    
+    source = db.sources.find_one({'_id':source_id})
+    if not source:
+        return jsonify({ "error": "Source Not Found" }), 404
+    if not current_user['token'] or source['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    if source['selected_nos'] >= source['limit']:
+        return jsonify({ "error": "Plan Limit Reached" }), 400
+    if source['urls'][index]['selected']:
+        return jsonify({ "error": "URL Already Selected" }), 400
+    
+    source['urls'][index]['selected'] = True
+    sel_no = source['selected_nos'] + 1
+    db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls'], 'selected_nos':sel_no}})
+    return render_template('source.html', user=current_user, source=source, csrf_token=get_csrf_token(current_user['token']))
+
+@app.route('/source/deselect', methods=['GET'])
+@jwt_required()
+def deselect_url_in_source():
+    source_id = request.args.get('id')
+    index = int(request.args.get('index'))
+    
+    source = db.sources.find_one({'_id':source_id})
+    if not source:
+        return jsonify({ "error": "Source Not Found" }), 404
+    if not current_user['token'] or source['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    if not source['urls'][index]['selected']:
+        return jsonify({ "error": "URL Not Selected" }), 400
+    
+    source['urls'][index]['selected'] = False
+    sel_no = source['selected_nos'] - 1
+    db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls'], 'selected_nos':sel_no}})
+    return render_template('source.html', user=current_user, source=source, csrf_token=get_csrf_token(current_user['token']))
+
+@app.route('/source/add', methods=['POST'])
+@jwt_required()
+def add_url_in_source():
+    source_id = request.args.get('id')
+    url = request.form.get('url')
+    
+    source = db.sources.find_one({'_id':source_id})
+    if not source:
+        return jsonify({ "error": "Source Not Found" }), 404
+    if not current_user['token'] or source['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    
+    source['urls'].append({
+                'index':len(source['urls']),
+                'url':url,
+                'selected':False
+            })
+    db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls']}})
+    return render_template('source.html', user=current_user, source=source, csrf_token=get_csrf_token(current_user['token']))
+
+@app.route('/source/submit', methods=['GET'])
+@jwt_required()
+def generate_new_bot():
+    user_bot_count = db.bots.count_documents({"owner":current_user['_id']})
+    if user_bot_count >= app.config["PLAN_LIMITS"][current_user['plan']]['bots']:
+        return jsonify({ "error": "Plan Limit reached" }), 400
+
+    source_id = request.args.get('id')
+    source = db.sources.find_one({'_id':source_id})
+    if not source:
+        return jsonify({ "error": "Source Not Found" }), 404
+    if not current_user['token'] or source['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    
+    url_list = [url['url'] for url in source['urls'] if url['selected']]
+    domain_name = source['domain_name']
+    try:
+        namespace = create_embeddings(url_list, domain_name)
+        new_bot = {
+            '_id': uuid.uuid4().hex,
+            'name': source['bot_name'],
+            'sitemap_url': source['sitemap_url'],
+            'domain_name': source['domain_name'],
             'namespace': namespace,
             'owner': current_user['_id'],
+            'sources': url_list,
         }
         new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
-        db.chatbots.insert_one(new_bot)
+        db.bots.insert_one(new_bot)
         return jsonify(success=True)
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({ "error": "Bot Creation Failed" }), 500
 
-@app.route('/delbot', methods=['GET'])
+
+# Editbot Routes
+
+@app.route('/editbot/delete', methods=['GET'])
 @jwt_required()
 def delete_bot():
     bot_id = request.args.get('id')
-    bot = db.chatbots.find_one(bot_id)
+    bot = db.bots.find_one(bot_id)
     if bot['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
     try:
         namespace = bot['namespace']
         delete_embeddings(namespace)
-        db.chatbots.find_one_and_delete({'_id':bot_id})
+        db.bots.find_one_and_delete({'_id':bot_id})
         return jsonify(success=True)
     except Exception as e:
         print(e)
         return jsonify({ "error": "Bot Deletion Failed" }), 500
+
+@app.route('/editbot/sources/add', methods=['POST'])
+@jwt_required()
+def add_source_bot():
+    bot_id = request.args.get('id')
+    url = request.form.get('url') 
+    bot = db.bots.find_one(bot_id)
+    if bot['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    if url in bot['sources']:
+        return jsonify({ "error": "URL Already Preset" }), 400
+    try:
+        bot['sources'].append(url)
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':bot['sources']}})
+        return jsonify(success=True)
+    except Exception as e:
+        print(e)
+        return jsonify({ "error": "An Error Occured" }), 500
+
+@app.route('/editbot/sources/drop', methods=['GET'])
+@jwt_required()
+def drop_source_bot():
+    bot_id = request.args.get('id')
+    index = int(request.args.get('index'))
+    bot = db.bots.find_one(bot_id)
+    if bot['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    try:
+        bot['sources'].pop(index)
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':bot['sources']}})
+        return jsonify(success=True)
+    except Exception as e:
+        print(e)
+        return jsonify({ "error": "An Error Occured" }), 500
+
+@app.route('/editbot/regen', methods=['GET'])
+@jwt_required()
+def regenerate_bot():
+    bot_id = request.args.get('id')
+    bot = db.bots.find_one(bot_id)
+    if not bot:
+        return jsonify({ "error": "Bot Not Found" }), 404
+    if not current_user['token'] or bot['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    try:
+        delete_embeddings(bot['namespace'])
+        namespace = create_embeddings(bot['sources'], bot['domain_name'])
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'namespace':namespace}})
+        return jsonify(success=True)
+    except Exception as e:
+        print(e)
+        return jsonify({ "error": "Bot Creation Failed" }), 500
 
 # Chat Routes
 
@@ -212,7 +391,7 @@ def start_chatbot():
         db.chats.find_one_and_update({'_id':chat['_id']}, {'$set': {'last_access': datetime.now(timezone.utc)}})
     else:
         # If not, create new entry and set chat obj to new entry
-        bot = db.chatbots.find_one({'_id':bot_id})
+        bot = db.bots.find_one({'_id':bot_id})
         chat = {
             '_id': uuid.uuid4().hex,
             'bot_id': bot_id,

@@ -28,80 +28,9 @@ index = pinecone.Index(index_name)
 
 embed_model = "text-embedding-ada-002"
 
-def extract_data_from(url):
-    html = requests.get(url, headers={
-        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"
-    }).text
-    soup = BeautifulSoup(html, features="html.parser")
-    raw_text = soup.get_text()
-    lines = (line.strip() for line in raw_text.splitlines())
-    text = '\n'.join(line for line in lines if line)
-    title = soup.title.string
-    return {
-        'url': url,
-        'title': title,
-        'text': text,
-    }
+###################################################################################################################
 
-def pinecone_upsert(data, namespace):
-    batch_size = 100
-    for i in tqdm(range(0, len(data), batch_size)):
-        # find end of batch
-        i_end = min(len(data), i+batch_size)
-        meta_batch = data[i:i_end]
-        ids_batch = [x['id'] for x in meta_batch]
-        texts = [x['text'] for x in meta_batch]
-        try:
-            res = openai.Embedding.create(input=texts, engine=embed_model)
-        except Exception as e:
-            print(e)
-            done = False
-            while not done:
-                sleep(5)
-                try:
-                    res = openai.Embedding.create(input=texts, engine=embed_model)
-                    done = True
-                except:
-                    pass
-        embeds = [record['embedding'] for record in res['data']]
-        # cleanup metadata
-        meta_batch = [{
-            'title': x['title'],
-            'text': x['text'],
-            'url': x['url'],
-        } for x in meta_batch]
-        to_upsert = list(zip(ids_batch, embeds, meta_batch))
-        #upsert to Pinecone
-        index.upsert(vectors=to_upsert,namespace=namespace)
-
-def split_text(text, chunk_size, overlap):
-    sentences = re.split(r'(?<=[.!?]) +', text)
-    chunks = []
-    index = 0
-    
-    while index < len(sentences):
-        chunk = sentences[index:index + chunk_size]
-        chunks.append(' '.join(chunk))
-        index += chunk_size - overlap
-
-    return chunks
-
-def chunkify(data):
-    chunked_data = []
-    for post in data:
-        clean_text = post["text"].replace('\n', ' ')
-        clean_text = re.sub(r' +', ' ', clean_text)
-        clean_text = re.sub(r'^[ \t]*\n', '', clean_text, flags=re.MULTILINE)
-        text_chunks = split_text(clean_text, chunk_size=8, overlap=2)
-        for chunk in text_chunks:
-            new_post = post.copy()
-            new_post["text"] = chunk
-            chunked_data.append(new_post)
-    for idx, item in enumerate(chunked_data):
-        item['id'] = f"{item['url']}#{idx}"
-    return chunked_data
-
-def get_all_links_from_sitemap_v2(sitemap_url):
+def get_urls_from_sitemap(sitemap_url, domain_name):
     headers = {
         'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
         'From': 'googlebot(at)googlebot.com',
@@ -156,26 +85,99 @@ def get_all_links_from_sitemap_v2(sitemap_url):
         else:
             return set(filter(lambda u: is_same_domain(u) and is_web_page(u), extract_links_from_html(content)))
 
-    return list(process_sitemap(sitemap_url))
+    url_list = list(process_sitemap(sitemap_url))
+    final_list = [url for url in url_list if domain_name in url]
+    return final_list
 
-def create_embeddings(sitemap_url, domain_name):
-    url_list = get_all_links_from_sitemap_v2(sitemap_url)
+###################################################################################################################
 
+def extract_data_from(url):
+    html = requests.get(url, headers={
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"
+    }).text
+    soup = BeautifulSoup(html, features="html.parser")
+    raw_text = soup.get_text()
+    lines = (line.strip() for line in raw_text.splitlines())
+    text = '\n'.join(line for line in lines if line)
+    title = soup.title.string
+    return {
+        'url': url,
+        'title': title,
+        'text': text,
+    }
+
+def pinecone_upsert(data, namespace):
+    batch_size = 100
+    for i in tqdm(range(0, len(data), batch_size)):
+        # find end of batch
+        i_end = min(len(data), i+batch_size)
+        meta_batch = data[i:i_end]
+        ids_batch = [x['id'] for x in meta_batch]
+        texts = [x['text'] for x in meta_batch]
+        try:
+            res = openai.Embedding.create(input=texts, engine=embed_model)
+        except Exception as e:
+            print(e)
+            done = False
+            while not done:
+                sleep(5)
+                try:
+                    res = openai.Embedding.create(input=texts, engine=embed_model)
+                    done = True
+                except:
+                    pass
+        embeds = [record['embedding'] for record in res['data']]
+        # cleanup metadata
+        meta_batch = [{
+            'title': x['title'],
+            'text': x['text'],
+            'url': x['url'],
+        } for x in meta_batch]
+        to_upsert = list(zip(ids_batch, embeds, meta_batch))
+        #upsert to Pinecone
+        # index.upsert(vectors=to_upsert,namespace=namespace)
+
+def split_text(text, chunk_size, overlap):
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    chunks = []
+    index = 0
+    
+    while index < len(sentences):
+        chunk = sentences[index:index + chunk_size]
+        chunks.append(' '.join(chunk))
+        index += chunk_size - overlap
+
+    return chunks
+
+def chunkify(data):
+    chunked_data = []
+    for post in data:
+        clean_text = post["text"].replace('\n', ' ')
+        clean_text = re.sub(r' +', ' ', clean_text)
+        clean_text = re.sub(r'^[ \t]*\n', '', clean_text, flags=re.MULTILINE)
+        text_chunks = split_text(clean_text, chunk_size=8, overlap=2)
+        for chunk in text_chunks:
+            new_post = post.copy()
+            new_post["text"] = chunk
+            chunked_data.append(new_post)
+    for idx, item in enumerate(chunked_data):
+        item['id'] = f"{item['url']}#{idx}"
+    return chunked_data
+
+def create_embeddings(url_list, domain_name):
     data = []
     for url in url_list:
-        if domain_name in url:
-            print(url)
-            data.append(extract_data_from(url))
-    print(data)
+        data.append(extract_data_from(url))
     chunked_data = chunkify(data)
-    print("Chunked data ", len(chunked_data))
     new_namespace = ''.join([c for c in domain_name if c.isalnum()]) + str(round(time.time()*1000))
     pinecone_upsert(chunked_data, new_namespace)
-    print(new_namespace, "Upload successful")
+    print("Upload successful", new_namespace)
     return new_namespace
 
 def delete_embeddings(namespace):
     index.delete(delete_all=True, namespace=namespace)
+
+###################################################################################################################
 
 CONDENSE_PROMPT = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
 Chat History:

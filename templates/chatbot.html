@@ -62,15 +62,48 @@
 
       <aside>
         <div>
-          <iframe id="chatbot_widget" src="/bot?id={{bot['_id']}}" width="400px" height="500px"  frameborder="0"></iframe>
+          Chatbot
+          <!-- <iframe id="chatbot_widget" src="/bot?id={{bot['_id']}}" width="400px" height="500px"  frameborder="0"></iframe> -->
         </div>
 
         <div class="tab">Settings</div>
 
         <div class="tab">
           
-            <p>Sitemap URL : <code>{{bot['sitemap_url']}}</code></p><br>
-            <p>Domain Name : <code>{{bot['domain_name']}}</code></p><br>
+          <section class="source_container">
+            <h3>Sources</h3>
+            {% for url in bot['sources'] %}
+                  <span class="source_link">
+                    <a href="/editbot/sources/drop?id={{bot['_id']}}&index={{loop.index0}}">&#10060;</a>
+                    <span>{{url}}</span>
+                  </span>
+                  <br>                
+            {% endfor %}
+          </section>
+          <br>
+          <section class="onPageButton">
+          <p id="bot_regen_error" class="error error--hidden"></p>
+          <button id="bot_regen_btn" data-id="{{bot['_id']}}">
+            <span id="bot_regen_btn_text">Regenerate</span> <span id="bot_regen_btn_loader" class="loader loader--hidden"></span> 
+          </button>
+          </section>
+          <br>
+    
+          <section>
+          <h3>Add a URL</h3>
+          <form id="register" class="onPageForm"  name="bot_source_form" data-id="{{bot['_id']}}">
+            <p class="error error--hidden"></p>
+            <fieldset>
+            <input type="hidden" name="csrf_token" value={{csrf_token}}>
+            <label>Enter URL: </label>
+            <input type="url" name="url" width="60%"/>
+            </fieldset>
+            <footer>
+              <button type="submit">Add</button>
+            </footer>
+          </form>
+          </section>
+          <br>
           
         </div>
 

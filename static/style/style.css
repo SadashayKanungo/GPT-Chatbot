@@ -653,7 +653,7 @@ main > div .action {
 	position:relative;
 	display:block;
 	width:100%;
-	height:100vh;
+	height:120vh;
 	padding: 60px 0px;
 	left:0;
 	transition:left 0.5s;
@@ -1163,119 +1163,56 @@ form.onPageForm footer button:hover {
 
 /*==================================================================================================*/
 
-
-.modal2 {
-  background:rgba(0,0,0,0.7);
-  position:fixed;
-  width:100%;
-  height:100%;
-  top:0px;
-  left:0px;
-  bottom:0px;
-  transition:all .5s ease-in-out, visibility 0;
-  opacity:0;
-  visibility:hidden;
-  z-index:-5;
-}
-.modal2:target {
-  opacity:1;
-  visibility:visible;
-  transition:all .5s ease-in-out;
-  z-index:+5;
-}
-.modal2-content {
-  position:fixed;
-  top:50%;
-  left:50%;
-  width:50%;
-  background:var(--pureColor);
-  border-radius:5px;
-  transform:translate(-50%, -200%);
-  transition:all .5s ease-in-out;
-  perspective: 1000;
-  outline:1px solid transparent;
-  opacity:0;
-  visibility:hidden;
-}
-.modal2:target .modal2-content {
-  transform:translate(-50%, -50%);
-  transition:all .5s ease-in-out;
-  transition-delay: .5s;
-  z-index:6;
-  opacity:1;
-  visibility:visible;
-}
-.modal2-close {
-  float:right;
-  text-decoration:none;
-  padding:12px 12px;
-  color:var(--primeColor);
-  background-color: var(--flowColor);
-  font-weight:bold;
-  transition:all .5s ease-in-out;
-  z-index:+1;
-  text-align:center;
-  border-radius:0 5px 0 0;
-}
-.modal2-close:hover {
-  color:var(--pureColor);
-  background:var(--altColorHover);
-}
-.modal2-content h3 {
-  padding:10px;
-  display:block;
-  text-align:center;
-  border-bottom:1px solid var(--primeColor);
-  text-transform:capitalize;
-  background: var(--flowColor);
-  color:var(--primeColor);
-  border-radius:5px 5px 0 0;
-}
-.modal2-area {
-  padding:20px;
-  text-align: left;
-
-}
-.modal2-area code{
-  font-weight: bold;
-  background-color: var(--highlightColor);
-  border-radius: 5px;
-  padding: 5px;
-  line-height:0.8rem;
-  margin-left:10px;
-  overflow-x: scroll;
-  scrollbar-width:none;
-}
-.modal2-area .code{
-  font-family: monospace;
-  font-weight: bold;
-  background-color: var(--highlightColor);
-  border-radius: 5px;
-  padding: 5px;
-  overflow-x: scroll;
-  scrollbar-width:none;
+.source_container{
+	display: flex;
+	flex-direction: column;
+	align-items: center;
 }
 
-.modal2-area .code {
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    scrollbar-width: none;  /* Firefox */
+.source_link{
+	width:60%;
+	height: 50px;
+	padding:10px;
+	text-align:left;
+	background-color: var(--highlightColor);
+	display:inline;
+	overflow: hidden;
+	border-radius: 9999px;
 }
-.modal2-area .code::-webkit-scrollbar { 
-    display: none;  /* Safari and Chrome */
+.source_link a{
+	display:inline;
+	width:80%;
+	padding:10px;
+	text-align:left;
+	padding:10px 0px;
+}
+.source_link a:hover{
+	opacity:0.5;
+}
+.source_link span{
+	display:inline;
+	text-decoration: none;
+	font-family: sans-serif;
+	margin-left:20px;
 }
 
-@media only screen and (max-width: 979px) {
-	.modal2-content {
-		width:75%;
-	  }
-  }
-  
+.onPageButton button {
+	width:20%;
+	padding:0.75em;
+	margin-bottom: 50px;
+	font-weight:bold;
+	border:none;
+	border-radius:1.5em;
+  	align-items: baseline;
+	background:var(--altColor);
+	color:var(--primeColor);
+	transition:background 0.3s;
+}
 
-  @media only screen and (max-width: 639px) {
-	.modal2-content {
-		width:95%;
-	  }
-  }
+.onPageButton button:focus,
+.onPageButton button:hover {
+	background:var(--altColorHover);
+}
 
 /*=============================================================================================*/
 #accountDetails p {

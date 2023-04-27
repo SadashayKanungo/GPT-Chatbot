@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div id="top">
+
+  <header>
+    <h1><a href="/" class="icon_logo"><i>{{ user['name'] }}</i></a></h1>
+    <a href="#mainMenu" class="openMainMenu" hidden></a>
+    <nav id="mainMenu">
+      <a href="#" class="modalClose" hidden></a>
+      <ul>
+        <li hidden><a href="#" class="modalClose">Exit Menu</a></li>
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li class="alternate featured"><a href="/user/signout">Sign Out</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+
+    <section id="testimonials">
+      <header id="accountDetails">
+        <h2>{{source['bot_name']}}</h2>
+        <h3>{{source['domain_name']}}</h3>
+        <br><br>
+        <p>Selected URLs will be used to train your GPT Chatbot.<br>
+        Your plan supports a maximum of <strong>{{source['limit']}}</strong> URLs.<br>
+        Click SUBMIT to create your GPT Chatbot.</p>
+
+        <section class="source_container">
+        <h3>Selected URLs</h3>
+        {% for url in source['urls'] %}
+            {% if url['selected'] == true %}
+              <div class="source_link">
+                <a href="/source/deselect?id={{source['_id']}}&index={{url['index']}}">&#10060;</a>
+                <span>{{url['url']}}</span>
+              </div>
+              <br>
+            {% endif %}
+            
+        {% endfor %}
+        </section>
+        <br>
+        <section class="onPageButton">
+        <p id="source_submit_error" class="error error--hidden"></p>
+        <button id="source_submit_btn" data-id="{{source['_id']}}">
+          <span id="source_submit_btn_text">Submit</span> <span id="source_submit_btn_loader" class="loader loader--hidden"></span> 
+        </button>
+        </section>
+        <br>
+        <section class="source_container">
+        <h3>Available URLs</h3>
+        {% for url in source['urls'] %}
+            {% if url['selected'] == false %}
+              <div class="source_link">
+                <a href="/source/select?id={{source['_id']}}&index={{url['index']}}">&#9989;</a>
+                <span>{{url['url']}}</span>
+              </div>
+              <br>
+            {% endif %}
+            
+        {% endfor %}
+        </section>
+
+        <section>
+        <h3>Add a URL</h3>
+        <form class="onPageForm"  action="/source/add?id={{source['_id']}}" method="post">
+          <fieldset>
+            <input type="hidden" name="csrf_token" value={{csrf_token}}>
+
+            <label for="url">Enter URL: </label>
+            <input type="url" name="url" width="60%"/>
+          </fieldset>
+          
+          <footer>
+            <button type="submit">Add</button>
+          </footer>
+        </form>
+        </section>
+        <br>
+      </header>
+    <!-- #testimonials --></section>
+
+  </main>
+
+  <footer>
+    <h2 class="icon_logo">GPT<span>Chatbot</span></h2>
+    <ul class="onPageLinks">
+        <li><a href="#testimonials">Details</a></li>
+        <li><a href="#pricing">Subscribe</a></li>
+        <li><a href="/dashboard">Dashboard</a></li>
+    </ul>
+    <p>
+      &copy; 2023 GPTChatbot. All rights reserved.
+    </p>
+    <ul class="socialLinks">
+      <li>
+        <a href="#" class="icon_twitter">
+          <span>Twitter</span>
+        </a>
+      </li><li>
+        <a href="#" class="icon_github">
+          <span>Github</span>
+        </a>
+      </li>
+    </ul>
+  </footer>
+
+</div>
+
+{% endblock %}

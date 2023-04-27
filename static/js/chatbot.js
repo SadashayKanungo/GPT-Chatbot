@@ -106,7 +106,7 @@ const getChatbot = async () => {
   // chat.innerHTML = `<iframe id="gpt-chatbot-iframe" src="http://localhost:3000?id=${qa_chain_id}" width="100%" height="100%" frameborder="0"></iframe>`
   
   var mql = window.matchMedia("(max-width: 767px)")
-  mql.addEventListener("change", () => {
+  mql.addEventListener("change", (media) => {
     var iframe = document.getElementById('gpt-chatbot-iframe');
     if (media.matches) { // If media query matches
       iframe.style.width = "90%";

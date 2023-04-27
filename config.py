@@ -9,12 +9,13 @@ CHATBOT_STATIC_PATH = 'chatbot/build'
 CHATBOT_SCRIPT_FILE = 'chatbot.js'
 
 PLAN_LIMITS = {
-    'Starter':5,
-    'Standard':20,
-    'Premium':50,
+    'Starter':{'bots':5, 'sources':10},
+    'Standard':{'bots':20, 'sources':50},
+    'Premium':{'bots':50, 'sources':200},
 }
 
 CHAT_RETAIN_TIME = 60*10
+SOURCE_RETAIN_TIME = 60*60*6
 
 
 ### .env configuration

@@ -406,7 +406,7 @@ def start_chatbot():
         'qa_chain_id': chat['_id'],
         'messages': chat['messages']
     })
-    response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"])
+    response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"], secure=True, httponly=True, samesite='None')
     return response
 
 @app.route('/chat/ask', methods=['POST'])
@@ -424,7 +424,7 @@ def ask_chatbot():
     response = jsonify({
         'answer': ans['answer']
     })
-    response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"])
+    response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"], secure=True, httponly=True, samesite='None')
     return response
 
 # Stripe Endpoints

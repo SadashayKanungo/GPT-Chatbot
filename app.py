@@ -196,7 +196,7 @@ def get_sources():
             urls.append({
                 'index':i,
                 'url':parsed_urls[i],
-                'selected':(i<sources_limit)
+                'selected':False
             })
 
         new_source = {
@@ -207,7 +207,7 @@ def get_sources():
             'domain_name': domain_name,
             'limit':sources_limit,
             'urls': urls,
-            'selected_nos': min(sources_limit, len(urls)),
+            'selected_nos': 0,
             'created_at': datetime.now(timezone.utc),
         }
         db.sources.insert_one(new_source)
@@ -306,6 +306,7 @@ def generate_new_bot():
                 'header_text':f'Conversation with {source["bot_name"]}',
                 'initial_messages':["Hi! How may I help you?"],
                 'accent_color': "#000000",
+                'base_prompt': app.config['DEFAULT_BASE_PROMPT']
             }
         }
         new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
@@ -342,6 +343,7 @@ def configure_bot():
         'header_text': request.form.get('header_text'),
         'accent_color': request.form.get('accent_color'),
         'initial_messages':request.form.get('initial_messages').split('\n'),
+        'base_prompt':request.form.get('base_prompt'),
     }
     print(new_config)
     
@@ -427,6 +429,7 @@ def start_chatbot():
             '_id': uuid.uuid4().hex,
             'bot_id': bot_id,
             'namespace': bot['namespace'],
+            'base_prompt': bot['config']['base_prompt'],
             'messages': [],
             'internal_messages': [{"role": "system", "content": "You are a helpful assistant."}],
             'last_access': datetime.utcnow(),
@@ -446,7 +449,7 @@ def ask_chatbot():
     qa_chain_id = request.args.get('id')
     qn = request.json['question']
     chat = db.chats.find_one({'_id':qa_chain_id})
-    ans = get_answer(qn, chat['internal_messages'], chat['namespace'])
+    ans = get_answer(qn, chat['internal_messages'], chat['namespace'], chat['base_prompt'])
     updated_messages = chat['messages'] + [{"role":"user", "content":qn}, {"role":"assisstant", "content":ans['answer']}]
     db.chats.find_one_and_update({'_id':qa_chain_id}, {'$set': {
         'messages': updated_messages,

@@ -185,9 +185,7 @@ Chat History:
 Follow Up Input: {question}
 Standalone question:"""
 
-QA_PROMPT = """You are a helpful AI assistant. Use the following pieces of context to answer the question at the end.
-If you don't know the answer, just say you don't know. DO NOT try to make up an answer.
-If the question is not related to the context, politely respond that you are tuned to only answer questions that are related to the context.
+QA_PROMPT = """{base_prompt}
 ####
 Context: {context}
 Question: {question}
@@ -204,7 +202,7 @@ def get_source_documents(query, namespace):
         contexts = [x['metadata']['text'] for x in pinecone_results['matches']]
         return contexts
 
-def get_answer(question, internal_messages, namespace):
+def get_answer(question, internal_messages, namespace, base_prompt):
     # Check if it's a follow-up question (i.e., not the first user message)
         if len(internal_messages) >= 2:
             chat_history = ""
@@ -234,7 +232,7 @@ def get_answer(question, internal_messages, namespace):
         # Generate an answer using the QA_PROMPT and the retrieved context
         answer_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages = [ASK_MESSAGE] + [{"role": "user", "content": QA_PROMPT.format(context='\n'.join(source_documents), question=standalone_question)}]
+            messages = [ASK_MESSAGE] + [{"role": "user", "content": QA_PROMPT.format(context='\n'.join(source_documents), question=standalone_question, base_prompt=base_prompt)}]
         )
 
         answer = answer_res["choices"][0]["message"]["content"]

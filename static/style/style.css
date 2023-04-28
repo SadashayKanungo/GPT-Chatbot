@@ -651,7 +651,7 @@ main > div .action {
   	scrollbar-width: none;  /* Firefox */
 }
 #everydayTasks aside::-webkit-scrollbar {
-	display: none;
+	display:none;
   }
 
 #everydayTasks aside div {
@@ -659,7 +659,7 @@ main > div .action {
 	position:relative;
 	display:block;
 	width:100%;
-	height:100vh;
+	height:120vh;
 	padding: 60px 0px;
 	left:0;
 	transition:left 0.5s;
@@ -1111,13 +1111,14 @@ main > div .action {
 	margin:0.125em 0 1em;
 	border:0.0625em solid var(--altColor);
 	border-radius:0.5em;
-}
-.onPageForm textarea{
-	resize: vertical;
+	font-size: medium;
+	resize:none;
+	font-size: small;
 }
 .onPageForm input[type=color]{
 	width:100px;
-	height:60px;
+	height:50px;
+	margin-left: 40px;
 }
 
 .onPageForm footer {

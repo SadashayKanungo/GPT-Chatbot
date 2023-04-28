@@ -72,13 +72,16 @@
             <form class="onPageForm"  name="bot_config_form" data-id="{{bot['_id']}}">
               <p class="error error--hidden"></p>
               <fieldset>
-              <input type="hidden" name="csrf_token" value={{csrf_token}}>
-              <label>Header Text: </label>
-              <input type="text" name="header_text" value="{{bot.config.header_text}}"/>
-              <label>Initial Messages (New Line separated):</label>
-              <textarea name="initial_messages" rows="5">{% for msg in bot.config.initial_messages %}{{msg}}{% endfor %}</textarea>
-              <label>Accent Color: </label>
-              <input type="color" name="accent_color" width="100px" height="100px" value="{{bot.config.accent_color}}"/>
+                <input type="hidden" name="csrf_token" value={{csrf_token}}>
+                <label>Header Text: </label>
+                <input type="text" name="header_text" value="{{bot.config.header_text}}"/>
+                <label>Initial Messages (New Line separated):</label>
+                <textarea name="initial_messages" rows="3">{% for msg in bot.config.initial_messages %}{{msg}}{% endfor %}</textarea>
+                <label>Base Prompt (Passed to GPT Model):</label>
+                <textarea class="wider-textarea" name="base_prompt" rows="4">{{bot.config.base_prompt}}</textarea>
+                <label>Accent Color: 
+                  <input type="color" name="accent_color" width="100px" height="100px" value="{{bot.config.accent_color}}"/>
+                </label>
               </fieldset>
               <footer>
                 <button type="submit">Update</button>

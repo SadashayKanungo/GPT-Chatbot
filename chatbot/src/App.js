@@ -5,16 +5,17 @@ import Chatbot, { createChatBotMessage, createClientMessage } from 'react-chatbo
 import 'react-chatbot-kit/build/main.css';
 import './App.css';
 
-import config from './config.js';
+import MyHeader from './Components/MyHeader';
+import MyBotAvator from './Components/MyBotAvator';
 import MessageParser from './MessageParser.js';
 import ActionProvider from './ActionProvider.js';
 
-const urlParams = new URLSearchParams(window.location.search);
-const bot_id = urlParams.get('id');
-const base_url = `${window.location.protocol}//${window.location.host}`;
+// const urlParams = new URLSearchParams(window.location.search);
+// const bot_id = urlParams.get('id');
+// const base_url = `${window.location.protocol}//${window.location.host}`;
 
-// const bot_id = "c3247c990b8b4500b265dbd049ef5f09";
-// const base_url = `http://localhost:5000`;
+const bot_id = "39c1427d9e654e85bd52ebe388b07f64";
+const base_url = `http://localhost:5000`;
 
 function App() {
   const [data, setData] = useState({qa_chain_id:null, messages:null});
@@ -42,24 +43,31 @@ function App() {
     return <div className='App'><strong style={{"color":"red"}}>Error: {error.message}</strong></div>;
   }
 
-  const getInitialMessages = (config_messages, data_messages) => {
-    return config_messages.concat(data_messages.map((msg) => {
+  const getConfig = (data) => {
+    var greet_messages = data.config.initial_messages.map((msg) => createChatBotMessage(msg));
+    var init_messages = greet_messages.concat(data.messages.map((msg) => {
       if(msg.role === "user") {
         return createClientMessage(msg.content);
       } else {
         return createChatBotMessage(msg.content);
       }
     }));
+
+    return {
+      initialMessages: init_messages,
+      botName: "GPT Chatbot",
+      customComponents: {
+        header: (props) => <MyHeader {...props} text={data.config.header_text}/>,
+        botAvatar: (props) => <MyBotAvator {...props} />,
+      }
+    };
   }
   
   return (
     
     <div className="App">
       <Chatbot
-        config={{
-          ...config,
-          initialMessages: getInitialMessages(config.initialMessages, data.messages),
-        }}
+        config={getConfig(data)}
         messageParser={MessageParser}
         actionProvider= {(props) => <ActionProvider {...props} ask_url={`${base_url}/chat/ask?id=${data.qa_chain_id}`} />}
       />

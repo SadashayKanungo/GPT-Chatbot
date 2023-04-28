@@ -66,7 +66,27 @@
           <!-- <iframe id="chatbot_widget" src="/bot?id={{bot['_id']}}" width="400px" height="500px"  frameborder="0"></iframe> -->
         </div>
 
-        <div class="tab">Settings</div>
+        <div class="tab">
+          <section>
+            <h3>Chatbot Settings</h3>
+            <form class="onPageForm"  name="bot_config_form" data-id="{{bot['_id']}}">
+              <p class="error error--hidden"></p>
+              <fieldset>
+              <input type="hidden" name="csrf_token" value={{csrf_token}}>
+              <label>Header Text: </label>
+              <input type="text" name="header_text" value="{{bot.config.header_text}}"/>
+              <label>Initial Messages (New Line separated):</label>
+              <textarea name="initial_messages" rows="5">{% for msg in bot.config.initial_messages %}{{msg}}{% endfor %}</textarea>
+              <label>Accent Color: </label>
+              <input type="color" name="accent_color" width="100px" height="100px" value="{{bot.config.accent_color}}"/>
+              </fieldset>
+              <footer>
+                <button type="submit">Update</button>
+              </footer>
+            </form>
+          </section>
+
+        </div>
 
         <div class="tab">
           <section class="source_container">
@@ -75,7 +95,7 @@
               {% for url in bot['sources'] %}
                 <tr class="source_link_row">
                   <td class="source_link_text">{{url}}</td>
-                  <td class="source_link_btn"><button class="bot_src_del" data-id="{{bot['_id']}}" data-index="{{loop.index0}}">&#10060;</button></td>
+                  <td class="source_link_btn"><button class="bot_src_del" data-id="{{bot['_id']}}" data-index="{{loop.index0}}"><strong>&#128465;</strong></button></td>
                 </tr>
               {% endfor %}
             </table>

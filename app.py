@@ -114,7 +114,9 @@ def login():
 # Frontend and Static Routes
 @app.route('/')
 def home():
-    return render_template('home.html')
+    is_signed_in = 'access_token_cookie' in request.cookies
+    print(is_signed_in, request.cookies)
+    return render_template('home.html', is_signed_in=is_signed_in)
 
 @app.route('/dashboard/')
 @jwt_required()
@@ -300,6 +302,11 @@ def generate_new_bot():
             'namespace': namespace,
             'owner': current_user['_id'],
             'sources': url_list,
+            'config':{
+                'header_text':f'Conversation with {source["bot_name"]}',
+                'initial_messages':["Hi! How may I help you?"],
+                'accent_color': "#000000",
+            }
         }
         new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
         db.bots.insert_one(new_bot)
@@ -326,6 +333,28 @@ def delete_bot():
     except Exception as e:
         print(e)
         return jsonify({ "error": "Bot Deletion Failed" }), 500
+
+@app.route('/editbot/config', methods=['POST'])
+@jwt_required()
+def configure_bot():
+    bot_id = request.args.get('id')
+    new_config = {
+        'header_text': request.form.get('header_text'),
+        'accent_color': request.form.get('accent_color'),
+        'initial_messages':request.form.get('initial_messages').split('\n'),
+    }
+    print(new_config)
+    
+    bot = db.bots.find_one(bot_id)
+    if bot['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    try:
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'config':new_config}})
+        return jsonify(success=True)
+    except Exception as e:
+        print(e)
+        return jsonify({ "error": "An Error Occured" }), 500
+
 
 @app.route('/editbot/sources/add', methods=['POST'])
 @jwt_required()
@@ -392,6 +421,8 @@ def start_chatbot():
     else:
         # If not, create new entry and set chat obj to new entry
         bot = db.bots.find_one({'_id':bot_id})
+        if not bot:
+            return jsonify({ "error": "Bot Not Found" }), 404
         chat = {
             '_id': uuid.uuid4().hex,
             'bot_id': bot_id,
@@ -404,7 +435,8 @@ def start_chatbot():
     
     response = jsonify({
         'qa_chain_id': chat['_id'],
-        'messages': chat['messages']
+        'messages': chat['messages'],
+        'config': bot['config'],
     })
     response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"], secure=True, httponly=True, samesite='None')
     return response

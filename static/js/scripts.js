@@ -79,6 +79,30 @@ $("form[name=newbot_form").submit(function(e) {
   e.preventDefault();
 });
 
+$("form[name=bot_config_form").submit(function(e) {
+
+  var $form = $(this);
+  var $error = $form.find(".error");
+  var data = $form.serialize();
+  var bot_id = $form.attr("data-id");
+  
+    $.ajax({
+    url: `/editbot/config?id=${bot_id}`,
+    type: "POST",
+    data: data,
+    dataType: "json",
+    success: function(resp) {
+      console.log(resp);
+      document.location.reload(true);
+    },
+    error: function(resp) {
+      $error.text(resp.responseJSON.error).removeClass("error--hidden");
+    }
+  });
+
+  e.preventDefault();
+});
+
 $("form[name=bot_source_form").submit(function(e) {
 
   var $form = $(this);

@@ -682,6 +682,10 @@ main > div .action {
 	margin-top:20px;
 	padding:10px;
 }
+.tab h3{
+	margin-bottom:20px;
+	padding:10px;
+}
 
 
 
@@ -725,7 +729,7 @@ main > div .action {
 	visibility: visible;
   }
 
-  #delete_btn{
+  #bot_delete_btn{
 	padding:0.5rem 1rem;
 	border-radius:1.25rem;
 	border-color: var(--highlightColor);
@@ -735,10 +739,10 @@ main > div .action {
 	color: var(--pureColor);
 	margin-bottom: 30px;
   }
-  #delete_btn:hover{
+  #bot_delete_btn:hover{
 	background-color: var(--red);
   }
-#delete_btn:focus {
+#bot_delete_btn:focus {
 	outline:none;
 	box-shadow:0 0 0.25rem 0.125rem var(--red-translucent);
 }
@@ -1092,18 +1096,28 @@ main > div .action {
 
 /*===================================================================================================*/
 
+.bot_src_del{
+	color: var(--red);
+}
+
 .onPageForm label {
 	display:block;
 }
 
 .onPageForm input,
-.onPageForm select,
-.onPageForm textarea {
+.onPageForm textarea{
 	width:50%;
 	padding:0.5em;
 	margin:0.125em 0 1em;
 	border:0.0625em solid var(--altColor);
 	border-radius:0.5em;
+}
+.onPageForm textarea{
+	resize: vertical;
+}
+.onPageForm input[type=color]{
+	width:100px;
+	height:60px;
 }
 
 .onPageForm footer {

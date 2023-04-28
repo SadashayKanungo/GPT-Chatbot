@@ -14,8 +14,13 @@
         <li><a href="#features">Features</a></li>
         <li><a href="#testimonials">Tesimonials</a></li>
         <li><a href="#pricing">Pricing</a></li>
-        <li class="alternate featured"><a href="#getStarted">Get Started</a></li>
+        {% if is_signed_in %}
+        <li class="alternate featured"><a href="/user/signout">Sign Out</a></li>
+        <li class="alternate"><a href="/dashboard">Dashboard</a></li>
+        {% else %}
+        <li class="alternate featured"><a href="#register">Get Started</a></li>
         <li class="alternate"><a href="#signIn">Sign in</a></li>
+        {% endif %}
       </ul>
     </nav>
   </header>

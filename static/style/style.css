@@ -624,11 +624,21 @@ main > div .action {
 }
 
 #everydayTasks h2 {
-	text-transform: capitalize;
 	font-weight: bold;
 }
 #everydayTasks h3 {
 	text-align: center;
+}
+#everydayTasks .slider-item{
+	min-width:100px;
+}
+#everydayTasks .slider{
+	overflow-x: scroll;
+	-ms-overflow-style: none;  /* IE and Edge */
+	scrollbar-width: none;  /* Firefox */
+}
+#everydayTasks .slider::-webkit-scrollbar {
+	display:none;
 }
 
 #everydayTasks input:nth-of-type(1):checked ~ div article:nth-of-type(1) h3,
@@ -1022,7 +1032,6 @@ main > div .action {
 	overflow: hidden;
 	font-weight: bold;
 	font-size: 30px;
-  	text-transform:capitalize;
 	color: var(--flowColor);
 	z-index: 2;
 	position: relative;
@@ -1066,7 +1075,6 @@ main > div .action {
 	  flex-basis: calc(50% - 30px);
 	}
 	.bot-card-title {
-      text-transform:capitalize;
 	  font-size: 24px;
 	}
   }
@@ -1079,7 +1087,6 @@ main > div .action {
 	.bot-card-title {
 	  min-height: 72px;
 	  line-height: 1;
-      text-transform:capitalize;
 	  font-size: 24px;
 	}
 	.bot-card-link {

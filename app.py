@@ -28,11 +28,15 @@ if 'last_access_1' in db.chats.index_information():
     if current_expire_seconds != app.config['CHAT_RETAIN_TIME']:
         db.chats.drop_index('last_access_1')
         db.chats.create_index("last_access", expireAfterSeconds=app.config['CHAT_RETAIN_TIME'])
+else:
+    db.chats.create_index("last_access", expireAfterSeconds=app.config['CHAT_RETAIN_TIME'])
 if 'created_at_1' in db.sources.index_information():
     current_expire_seconds = db.sources.index_information()['created_at_1']['expireAfterSeconds']
     if current_expire_seconds != app.config['SOURCES_RETAIN_TIME']:
         db.sources.drop_index('created_at_1')
-        db.sources.create_index("created_at_1", expireAfterSeconds=app.config['SOURCES_RETAIN_TIME'])
+        db.sources.create_index("created_at", expireAfterSeconds=app.config['SOURCES_RETAIN_TIME'])
+else:
+    db.sources.create_index("created_at", expireAfterSeconds=app.config['SOURCES_RETAIN_TIME'])
 
 stripe_keys = {
     "secret_key": os.environ["STRIPE_SECRET_KEY"],
@@ -415,6 +419,9 @@ def regenerate_bot():
 @app.route('/chat/start', methods=['GET'])
 def start_chatbot():
     bot_id = request.args.get('id')
+    bot = db.bots.find_one({'_id':bot_id})
+    if not bot:
+        return jsonify({ "error": "Bot Not Found" }), 404
     cookie_value = request.cookies.get('gptchatbot_cookie')
     if cookie_value:
         # If yes, update last access and set chat obj to found entry
@@ -422,9 +429,6 @@ def start_chatbot():
         db.chats.find_one_and_update({'_id':chat['_id']}, {'$set': {'last_access': datetime.now(timezone.utc)}})
     else:
         # If not, create new entry and set chat obj to new entry
-        bot = db.bots.find_one({'_id':bot_id})
-        if not bot:
-            return jsonify({ "error": "Bot Not Found" }), 404
         chat = {
             '_id': uuid.uuid4().hex,
             'bot_id': bot_id,
@@ -461,6 +465,15 @@ def ask_chatbot():
     })
     response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"], secure=True, httponly=True, samesite='None')
     return response
+
+# Accent Color Endpoint
+@app.route('/accentcolor', methods=['GET'])
+def accent_color():
+    bot_id = request.args.get('id')
+    bot = db.bots.find_one(bot_id)
+    if not bot:
+        return jsonify({ "error": "Bot Not Found" }), 404
+    return jsonify(accent_color=bot['config']['accent_color'])
 
 # Stripe Endpoints
 

@@ -1,9 +1,11 @@
 html, body {
   height: 100%; /* Set height to 100% to fill the iframe vertically */
-  margin: 0; /* Remove default margin to fill the iframe horizontally */
+  width: 100%; /* Remove default margin to fill the iframe horizontally */
+  margin:0;
   overflow: hidden; /* Hide any overflow to prevent scrolling inside the iframe */
 }
 
 #root {
   height: 100%; /* Set height to 100% to fill the iframe */
+  width: 100%; /* Set height to 100% to fill the iframe */
 }

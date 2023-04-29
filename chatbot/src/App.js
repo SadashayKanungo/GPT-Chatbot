@@ -43,7 +43,7 @@ function App() {
     return <div className='App'><strong style={{"color":"red"}}>Error: {error.message}</strong></div>;
   }
 
-  const textColor = (color) => {
+  const isLightTheme = (color) => {
     // Convert hex color code to RGB
     const hex = color.replace('#', '');
     const r = parseInt(hex.substr(0, 2), 16);
@@ -52,16 +52,23 @@ function App() {
     // Calculate relative luminance using the sRGB color space formula
     const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
     // Check if the luminance is above a threshold to determine if the color is light or dark
-    if (luminance > 0.5) {
-      return '#000';
-    } else {
-      return '#fff';
-    }
+    return (luminance > 0.5)
   }
 
   const getConfig = (data) => {
     document.documentElement.style.setProperty('--accentColor', data.config.accent_color);
-    document.documentElement.style.setProperty('--accentTextColor', textColor(data.config.accent_color));
+    if(isLightTheme(data.config.accent_color)){
+      document.documentElement.style.setProperty('--accentTextColor', '#000');
+      // document.documentElement.style.setProperty('--messageColor', 	'#f4f4f5');
+      // document.documentElement.style.setProperty('--messageTextColor', '#000');
+      // document.documentElement.style.setProperty('--backgroundColor', '#000');
+    } else {
+      document.documentElement.style.setProperty('--accentTextColor', '#fff');
+      // document.documentElement.style.setProperty('--messageColor', '#3f3f46');
+      // document.documentElement.style.setProperty('--messageTextColor', '#fff');
+      // document.documentElement.style.setProperty('--backgroundColor', '#fff');
+    }
+    
     var greet_messages = data.config.initial_messages.map((msg) => createChatBotMessage(msg));
     var init_messages = greet_messages.concat(data.messages.map((msg) => {
       if(msg.role === "user") {

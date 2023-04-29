@@ -1,7 +1,7 @@
 const CHAT_BUTTON_SIZE = 50 // size of the chat button in pixels
 const CHAT_BUTTON_RADIUS = CHAT_BUTTON_SIZE / 2 // radius of the chat button in pixels
-const CHAT_BUTTON_BACKGROUND_COLOR = 'black' // background color of the chat button
-let ICON_COLOR = 'white'
+var CHAT_BUTTON_BACKGROUND_COLOR = '#000000' // background color of the chat button
+var ICON_COLOR = '#ffffff'
 let has_been_opened = false
 
 // create the chat button element
@@ -62,13 +62,13 @@ chatButton.addEventListener('click', () => {
 
 
 const chat = document.createElement('div')
-
+chat.id = 'iframe-container'
 chat.style.position = 'fixed'
 chat.style.flexDirection = 'column'
 chat.style.justifyContent = 'space-between'
 chat.style.bottom = '80px'
-chat.style.width = '85vw'
-chat.style.height = '70vh'
+chat.style.width = '400px'
+chat.style.height = '500px'
 chat.style.boxShadow =
   'rgba(150, 150, 150, 0.2) 0px 10px 30px 0px, rgba(150, 150, 150, 0.2) 0px 0px 0px 1px'
 
@@ -79,59 +79,55 @@ chat.style.overflow = 'hidden'
 
 document.body.appendChild(chat)
 
-// Create a condition that targets viewports at least 768px wide
-const mediaQuery = window.matchMedia('(min-width: 550px)')
-
-function handleChatWindowSizeChange(e) {
-  // Check if the media query is true
-  if (e.matches) {
-    chat.style.height = '500px'
-    chat.style.width = '400px'
-  }
-}
-
-// Register event listener
-mediaQuery.addEventListener('change', handleChatWindowSizeChange)
-
-// Initial check
-handleChatWindowSizeChange(mediaQuery)
-
 const getChatbot = async () => {
   ////////////////////////////////////////// NEW STUFF //////////////////////////////////////////
   const bot_id = document.currentScript.id;
   var l = document.createElement('a');
   l.href = document.currentScript.src;
-  const bot_url = `${l.protocol}//${l.host}/bot?id=${bot_id}`;
-  chat.innerHTML = `<iframe id="gpt-chatbot-iframe" src="${bot_url}" width="400px" height="500px" frameborder="0""></iframe>`
-  // chat.innerHTML = `<iframe id="gpt-chatbot-iframe" src="http://localhost:3000?id=${qa_chain_id}" width="100%" height="100%" frameborder="0"></iframe>`
-  
-  var mql = window.matchMedia("(max-width: 767px)")
-  mql.addEventListener("change", (media) => {
-    var iframe = document.getElementById('gpt-chatbot-iframe');
-    if (media.matches) { // If media query matches
-      iframe.style.width = "90%";
-      iframe.style.height = "80%";
-    } else {
-      iframe.style.width = "400px";
-      iframe.style.height = "500px";
-    }
-  });
 
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  const accent_color_url = `${l.protocol}//${l.host}/accentcolor?id=${bot_id}`;
+  const response = await fetch(accent_color_url);
+  const data = await response.json();
+  if(data.accent_color)  CHAT_BUTTON_BACKGROUND_COLOR = data.accent_color;
+
   chatButton.style.backgroundColor = CHAT_BUTTON_BACKGROUND_COLOR
-  
   chatButton.style.right = '20px'
   chatButton.style.left = 'unset'
   chat.style.right = '20px'
   chat.style.left = 'unset'
-  
 
-  document.body.appendChild(chatButton)
-
-  const iconColor = getContrastingTextColor(CHAT_BUTTON_BACKGROUND_COLOR)
-  ICON_COLOR = iconColor
+  ICON_COLOR = getContrastingTextColor(CHAT_BUTTON_BACKGROUND_COLOR)
   chatButtonIcon.innerHTML = getChatButtonIcon()
+  
+  const bot_url = `${l.protocol}//${l.host}/bot?id=${bot_id}`;
+  chat.innerHTML = `<iframe id="gpt-chatbot-iframe" src="${bot_url}" width="100%" height="100%" frameborder="0""></iframe>`
+  // chat.innerHTML = `<iframe id="gpt-chatbot-iframe" src="http://localhost:3000?id=${qa_chain_id}" width="100%" height="100%" frameborder="0"></iframe>`
+  
+  // Media query for responsive Iframe
+  const mediaQuery = window.matchMedia("(max-width: 450px)");
 
+  function handleResizeOnLoad() {
+    var chat = document.getElementById('iframe-container');
+    if (mediaQuery.matches) {
+      chat.style.width = "90%";
+    } else {
+      chat.style.width = "400px";
+    }
+  }
+  // Add event listener to handle resize
+  mediaQuery.addEventListener("change", (e) => {
+    var chat = document.getElementById('iframe-container');
+    if (e.matches) {
+      chat.style.width = "90%";
+    } else {
+      chat.style.width = "400px";
+    }
+  });
+  // Call the function on page load
+  handleResizeOnLoad();
+  // Place button on screen
+  document.body.appendChild(chatButton)
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 function getChatButtonIcon() {

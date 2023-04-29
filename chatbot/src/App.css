@@ -61,8 +61,8 @@
   height: 20px;
 }
 .react-chatbot-kit-chat-header #chatbot-loader #chatbot-loader-dot1,#chatbot-loader-dot2,#chatbot-loader-dot3 {
-  stroke: #aaa;
-  fill: #aaa;
+  stroke: var(--accentTextColor);
+  fill: var(--accentTextColor);
 }
 
 /******************** Avatar ********************/
@@ -79,6 +79,9 @@
 }
 .react-chatbot-kit-user-avatar-container{
   background-color: var(--accentColor);
+}
+.react-chatbot-kit-user-avatar-icon{
+  fill: var(--accentTextColor);
 }
 
 /******************** Message ********************/
@@ -127,7 +130,7 @@
   color: var(--messageTextColor);
   border-bottom-left-radius: 8px;
   border-top-left-radius: 8px;
-  border: 1px solid #d8d8d8;
+  border: 1px solid var(--accentColor);
 }
 .react-chatbot-kit-chat-input:focus{
   outline: none;

@@ -435,8 +435,7 @@ def start_chatbot():
     if not bot:
         return jsonify({ "error": "Bot Not Found" }), 404
     cookie_value = request.cookies.get('gptchatbot_cookie')
-    if cookie_value:
-        prev_chat = db.chats.find_one({'_id':cookie_value})
+    prev_chat = db.chats.find_one({'_id':cookie_value}) if cookie_value else None
     
     if prev_chat and prev_chat['bot_id']==bot_id:
         chat = prev_chat

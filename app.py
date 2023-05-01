@@ -244,6 +244,8 @@ def select_url_in_source():
         return jsonify({ "error": "Source Not Found" }), 404
     if not current_user['token'] or source['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
+    if len(indexes)==0 or len(indexes)>source['limit']:
+        return jsonify({ "error": "Selection number not valid" }), 401
     
     selected_urls = [ source['urls'][index] for index in indexes ]
     db.sources.find_one_and_update({'_id':source_id}, {'$set': {'selected':selected_urls}})
@@ -444,8 +446,6 @@ def start_chatbot():
         chat = {
             '_id': uuid.uuid4().hex,
             'bot_id': bot_id,
-            'namespace': bot['namespace'],
-            'base_prompt': bot['config']['base_prompt'],
             'messages': [],
             'internal_messages': [{"role": "system", "content": "You are a helpful assistant."}],
             'last_access': datetime.utcnow(),
@@ -465,7 +465,8 @@ def ask_chatbot():
     qa_chain_id = request.args.get('id')
     qn = request.json['question']
     chat = db.chats.find_one({'_id':qa_chain_id})
-    ans = get_answer(qn, chat['internal_messages'], chat['namespace'], chat['base_prompt'])
+    bot = db.bots.find_one({'_id':chat['bot_id']})
+    ans = get_answer(qn, chat['internal_messages'], bot['namespace'], bot['config']['base_prompt'])
     updated_messages = chat['messages'] + [{"role":"user", "content":qn}, {"role":"assisstant", "content":ans['answer']}]
     db.chats.find_one_and_update({'_id':qa_chain_id}, {'$set': {
         'messages': updated_messages,

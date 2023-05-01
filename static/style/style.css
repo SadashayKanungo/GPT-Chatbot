@@ -1218,14 +1218,23 @@ form.onPageForm footer button:hover {
 	border: 0px dashed var(--flowColor);
 	border-bottom-width: 1px;
 }
-.source_container #pagination{
-	padding: 10px;
+.source_container .pagination-row{
 	display:flex;
+	justify-content: space-between;
+}
+.source_container .pagination-row select{
+	height: 30px;
+	margin:10px;
+	background-color: var(--primeColor);
+}
+.source_container #pagination{
+	display:flexbox;
 	justify-content: center;
 }
 .source_container .pagination-btn{
 	width:30px;
-	margin:10px;
+	height:30px;
+	margin:5px;
 	font-size: smaller;
 	border-radius: 5px;
 	background-color: var(--selectionColor);
@@ -1345,7 +1354,7 @@ form.onPageForm footer button:hover {
 /*=============================================================================================*/
 .iframe-container{
 	width:80%;
-	height: 70vh;
+	height: 80vh;
 	max-width: 800px;
 	margin: auto;
 	padding: 0;

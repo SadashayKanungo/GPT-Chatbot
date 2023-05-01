@@ -34,3 +34,14 @@ If the question is not related to the context, politely respond that you are tun
 # STRIPE_STANDARD_PRICE_ID=
 # STRIPE_PREMIUM_PRICE_ID=
 # STRIPE_ENDPOINT_SECRET=
+
+
+# Server Limits
+# - Query Length Limit
+# - Individual Post Content Limit
+# - Per Session Messages Limit
+
+# Pricing Limits
+# - Total Pages Limit
+# - Messages Limit
+# - Number of Chatbots

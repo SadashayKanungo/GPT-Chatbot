@@ -1342,4 +1342,18 @@ form.onPageForm footer button:hover {
 	margin: 10px auto;
 }
 
-  /*=========================================================================================================*/
+/*=============================================================================================*/
+.iframe-container{
+	width:80%;
+	height: 70vh;
+	max-width: 800px;
+	margin: auto;
+	padding: 0;
+}
+.iframe-container #chatbot_widget{
+	width:100%;
+	height:100%;
+	border:1px solid var(--flowColor);
+	border-radius: 10px;
+}
+/*=============================================================================================*/

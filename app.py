@@ -167,7 +167,7 @@ def get_script_response(bot_id, base_url):
     return script_response
 def get_iframe_response(bot_id, base_url):
     iframe_response = '<iframe id="gpt-chatbot-iframe" src="CHATBOT_IFRAME_URL" width="100%" height="100%" frameborder="0""></iframe>'
-    iframe_response = iframe_response.replace("CHATBOT_IFRAME_URL", f'{base_url}/bot?id={bot_id}')
+    iframe_response = iframe_response.replace("CHATBOT_IFRAME_URL", f'{base_url}bot?id={bot_id}')
     return iframe_response
 # Source Routes
 @app.route('/source/')
@@ -436,11 +436,12 @@ def start_chatbot():
         return jsonify({ "error": "Bot Not Found" }), 404
     cookie_value = request.cookies.get('gptchatbot_cookie')
     if cookie_value:
-        # If yes, update last access and set chat obj to found entry
-        chat = db.chats.find_one({'_id':cookie_value})
+        prev_chat = db.chats.find_one({'_id':cookie_value})
+    
+    if prev_chat and prev_chat['bot_id']==bot_id:
+        chat = prev_chat
         db.chats.find_one_and_update({'_id':chat['_id']}, {'$set': {'last_access': datetime.now(timezone.utc)}})
     else:
-        # If not, create new entry and set chat obj to new entry
         chat = {
             '_id': uuid.uuid4().hex,
             'bot_id': bot_id,

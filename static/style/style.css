@@ -669,7 +669,7 @@ main > div .action {
 	position:relative;
 	display:block;
 	width:100%;
-	height:120vh;
+	height:130vh;
 	padding: 60px 0px;
 	left:0;
 	transition:left 0.5s;
@@ -1195,16 +1195,18 @@ form.onPageForm footer button:hover {
   	display: inline-table;
 	width:50%;
 	margin: 30px;
+	padding:15px;
+	background-color: var(--highlightColor);
+	border-radius: 10px;
 }
 .source_container p {
 	width:50%;
 	margin: 10px auto;
+	
 }
 .source_table{
 	width:100%;
-	padding:15px;
-	background-color: var(--highlightColor);
-	border-radius: 10px;
+	margin: 15px;
 }
 .source_link_row{
 	padding:3px;
@@ -1215,6 +1217,57 @@ form.onPageForm footer button:hover {
 	font-family: monospace;
 	border: 0px dashed var(--flowColor);
 	border-bottom-width: 1px;
+}
+.source_container #pagination{
+	padding: 10px;
+	display:flex;
+	justify-content: center;
+}
+.source_container .pagination-btn{
+	width:30px;
+	margin:10px;
+	font-size: smaller;
+	border-radius: 5px;
+	background-color: var(--selectionColor);
+	color:var(--flowColor);
+}
+.source_container #pagination .current-page{
+	background-color: var(--primeColor);
+}
+.source_container #select-all{
+	width:25px;
+	height:25px;
+}
+.source_container #select-all-label{
+	text-align: right;
+}
+.source_container .url-checkbox{
+	width:20px;
+	height:20px;
+}
+.source_container .button-row{
+	padding: 10px;
+	display:flex;
+	justify-content:space-evenly;
+}
+.source_container .button-row button {
+	height: 50px;
+	width:30%;
+	font-weight:bold;
+	border:none;
+	border-radius:1.5em;
+  	align-items: baseline;
+	background-color:var(--altColor);
+	color:var(--primeColor);
+	transition:background 0.3s;
+}
+
+.source_container .button-row button:focus,
+.source_container .button-row button:hover {
+	background:var(--altColorHover);
+}
+.source_container .hidden{
+	visibility: hidden;
 }
 
 /*
@@ -1245,13 +1298,19 @@ form.onPageForm footer button:hover {
 	margin-left:20px;
 } */
 .onPageButton {
+	width:80%;
+	margin:auto;
 	text-align: center;
+	display:flex;
+	justify-content: space-around;
 }
-.onPageButton button {
+.onPageButton button,
+.onPageButton a {
 	width:20%;
 	padding:0.75em;
 	margin-top: 50px;
 	margin-bottom: 50px;
+	text-decoration: none;
 	font-weight:bold;
 	border:none;
 	border-radius:1.5em;
@@ -1260,7 +1319,8 @@ form.onPageForm footer button:hover {
 	color:var(--primeColor);
 	transition:background 0.3s;
 }
-
+.onPageButton a:focus,
+.onPageButton a:hover
 .onPageButton button:focus,
 .onPageButton button:hover {
 	background:var(--altColorHover);

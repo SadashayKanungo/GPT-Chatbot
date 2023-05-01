@@ -121,6 +121,14 @@ $("form[name=bot_source_form").submit(function(e) {
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+    },
+    beforeSend: function () {
+      $("#submit_add").addClass('loader--hidden');
+      $('#loader_add').removeClass('loader--hidden');
+    },
+    complete: function (response) {
+      $('#loader_add').addClass('loader--hidden');
+      $('#submit_add').removeClass('loader--hidden');
     }
   });
 
@@ -135,12 +143,11 @@ $("form[name=source_add_form").submit(function(e) {
   var source_id = $form.attr("data-id");
   
     $.ajax({
-    url: `/sources/add?id=${source_id}`,
+    url: `/source/add?id=${source_id}`,
     type: "POST",
     data: data,
     dataType: "json",
     success: function(resp) {
-      console.log(resp);
       document.location.reload(true);
     },
     error: function(resp) {

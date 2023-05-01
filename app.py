@@ -32,11 +32,11 @@ else:
     db.chats.create_index("last_access", expireAfterSeconds=app.config['CHAT_RETAIN_TIME'])
 if 'created_at_1' in db.sources.index_information():
     current_expire_seconds = db.sources.index_information()['created_at_1']['expireAfterSeconds']
-    if current_expire_seconds != app.config['SOURCES_RETAIN_TIME']:
+    if current_expire_seconds != app.config['SOURCE_RETAIN_TIME']:
         db.sources.drop_index('created_at_1')
-        db.sources.create_index("created_at", expireAfterSeconds=app.config['SOURCES_RETAIN_TIME'])
+        db.sources.create_index("created_at", expireAfterSeconds=app.config['SOURCE_RETAIN_TIME'])
 else:
-    db.sources.create_index("created_at", expireAfterSeconds=app.config['SOURCES_RETAIN_TIME'])
+    db.sources.create_index("created_at", expireAfterSeconds=app.config['SOURCE_RETAIN_TIME'])
 
 stripe_keys = {
     "secret_key": os.environ["STRIPE_SECRET_KEY"],
@@ -165,7 +165,10 @@ def get_script_response(bot_id, base_url):
     script_response = script_response.replace("CHATBOT_ID",bot_id)
     script_response = script_response.replace("CHATBOT_SCRIPT_URL", f'{base_url}static/js/{app.config["CHATBOT_SCRIPT_FILE"]}')
     return script_response
-
+def get_iframe_response(bot_id, base_url):
+    iframe_response = '<iframe id="gpt-chatbot-iframe" src="CHATBOT_IFRAME_URL" width="100%" height="100%" frameborder="0""></iframe>'
+    iframe_response = iframe_response.replace("CHATBOT_IFRAME_URL", f'{base_url}/bot?id={bot_id}')
+    return iframe_response
 # Source Routes
 @app.route('/source/')
 @jwt_required()
@@ -178,6 +181,18 @@ def source():
         return jsonify({ "error": "Not Authorized" }), 401
 
     return render_template('source.html', user=current_user, source=source, csrf_token=get_csrf_token(current_user['token']))
+
+@app.route('/sourceselected/')
+@jwt_required()
+def sourceselected():
+    source_id = request.args.get('id')
+    source = db.sources.find_one({'_id':source_id})
+    if not source:
+        return jsonify({ "error": "Source Not Found" }), 404
+    if not current_user['token'] or source['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+
+    return render_template('sourceselected.html', user=current_user, source=source, csrf_token=get_csrf_token(current_user['token']))
 
 @app.route('/newsource', methods=['POST'])
 @jwt_required()
@@ -195,14 +210,12 @@ def get_sources():
         parsed_urls = get_urls_from_sitemap(sitemap_url, domain_name)
         if not parsed_urls:
             return jsonify({'error':'No URLs Found'}), 500
-        urls = []
+        urls = dict()
         for i in range(len(parsed_urls)):
-            urls.append({
+            urls[str(i)] = {
                 'index':i,
                 'url':parsed_urls[i],
-                'selected':False
-            })
-
+            }
         new_source = {
             '_id':uuid.uuid4().hex,
             'owner': current_user['_id'],
@@ -211,7 +224,7 @@ def get_sources():
             'domain_name': domain_name,
             'limit':sources_limit,
             'urls': urls,
-            'selected_nos': 0,
+            'selected': [],
             'created_at': datetime.now(timezone.utc),
         }
         db.sources.insert_one(new_source)
@@ -220,51 +233,44 @@ def get_sources():
         print(e)
         return jsonify({'error':'Could Not Process Sitemap'}), 500
 
-@app.route('/source/select', methods=['GET'])
+@app.route('/source/select', methods=['POST'])
 @jwt_required()
 def select_url_in_source():
     source_id = request.args.get('id')
-    index = int(request.args.get('index'))
+    indexes = request.json['indexes']
     
     source = db.sources.find_one({'_id':source_id})
     if not source:
         return jsonify({ "error": "Source Not Found" }), 404
     if not current_user['token'] or source['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
-    if source['selected_nos'] >= source['limit']:
-        return jsonify({ "error": "Plan Limit Reached" }), 400
-    if source['urls'][index]['selected']:
-        return jsonify({ "error": "URL Already Selected" }), 400
     
-    source['urls'][index]['selected'] = True
-    sel_no = source['selected_nos'] + 1
-    db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls'], 'selected_nos':sel_no}})
+    selected_urls = [ source['urls'][index] for index in indexes ]
+    db.sources.find_one_and_update({'_id':source_id}, {'$set': {'selected':selected_urls}})
     return jsonify(success=True)
 
-@app.route('/source/deselect', methods=['GET'])
+@app.route('/source/delete', methods=['POST'])
 @jwt_required()
 def deselect_url_in_source():
     source_id = request.args.get('id')
-    index = int(request.args.get('index'))
+    indexes = request.json['indexes']
     
     source = db.sources.find_one({'_id':source_id})
     if not source:
         return jsonify({ "error": "Source Not Found" }), 404
     if not current_user['token'] or source['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
-    if not source['urls'][index]['selected']:
-        return jsonify({ "error": "URL Not Selected" }), 400
     
-    source['urls'][index]['selected'] = False
-    sel_no = source['selected_nos'] - 1
-    db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls'], 'selected_nos':sel_no}})
+    for index in indexes:
+        source['urls'].pop(index)
+    db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls']}})
     return jsonify(success=True)
 
 @app.route('/source/add', methods=['POST'])
 @jwt_required()
 def add_url_in_source():
     source_id = request.args.get('id')
-    url = request.form.get('url')
+    new_urls = request.form.get('urls').replace('\r','').split('\n')
     
     source = db.sources.find_one({'_id':source_id})
     if not source:
@@ -272,11 +278,13 @@ def add_url_in_source():
     if not current_user['token'] or source['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
     
-    source['urls'].append({
-                'index':len(source['urls']),
-                'url':url,
-                'selected':False
-            })
+    last_index = max(list(map(int, source['urls'].keys())))
+    for url in new_urls:
+        last_index += 1
+        source['urls'][str(last_index)] = {
+            'index':last_index,
+            'url':url,
+        }
     db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls']}})
     return jsonify(success=True)
 
@@ -294,7 +302,7 @@ def generate_new_bot():
     if not current_user['token'] or source['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
     
-    url_list = [url['url'] for url in source['urls'] if url['selected']]
+    url_list = [url['url'] for url in source['selected']]
     domain_name = source['domain_name']
     try:
         namespace = create_embeddings(url_list, domain_name)
@@ -314,6 +322,7 @@ def generate_new_bot():
             }
         }
         new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
+        new_bot['iframe'] = get_iframe_response(new_bot['_id'], request.host_url)
         db.bots.insert_one(new_bot)
         return jsonify(success=True)
     except Exception as e:
@@ -346,7 +355,7 @@ def configure_bot():
     new_config = {
         'header_text': request.form.get('header_text'),
         'accent_color': request.form.get('accent_color'),
-        'initial_messages':request.form.get('initial_messages').split('\n'),
+        'initial_messages':request.form.get('initial_messages').replace('\r','').split('\n'),
         'base_prompt':request.form.get('base_prompt'),
     }
     print(new_config)
@@ -366,53 +375,56 @@ def configure_bot():
 @jwt_required()
 def add_source_bot():
     bot_id = request.args.get('id')
-    url = request.form.get('url') 
-    bot = db.bots.find_one(bot_id)
-    if bot['owner'] != current_user['_id']:
-        return jsonify({ "error": "Not Authorized" }), 401
-    if url in bot['sources']:
-        return jsonify({ "error": "URL Already Preset" }), 400
-    try:
-        bot['sources'].append(url)
-        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':bot['sources']}})
-        return jsonify(success=True)
-    except Exception as e:
-        print(e)
-        return jsonify({ "error": "An Error Occured" }), 500
+    new_urls = request.form.get('urls').replace('\r','').split('\n')
 
-@app.route('/editbot/sources/drop', methods=['GET'])
-@jwt_required()
-def drop_source_bot():
-    bot_id = request.args.get('id')
-    index = int(request.args.get('index'))
     bot = db.bots.find_one(bot_id)
     if bot['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
     try:
-        bot['sources'].pop(index)
+        old_sources = bot['sources'].copy()
+        bot['sources'].extend(new_urls)
+        bot['sources'] = list(set(bot['sources']))
         db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':bot['sources']}})
-        return jsonify(success=True)
     except Exception as e:
         print(e)
         return jsonify({ "error": "An Error Occured" }), 500
-
-@app.route('/editbot/regen', methods=['GET'])
-@jwt_required()
-def regenerate_bot():
-    bot_id = request.args.get('id')
-    bot = db.bots.find_one(bot_id)
-    if not bot:
-        return jsonify({ "error": "Bot Not Found" }), 404
-    if not current_user['token'] or bot['owner'] != current_user['_id']:
-        return jsonify({ "error": "Not Authorized" }), 401
     try:
         delete_embeddings(bot['namespace'])
         namespace = create_embeddings(bot['sources'], bot['domain_name'])
         db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'namespace':namespace}})
         return jsonify(success=True)
     except Exception as e:
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':old_sources}})
+        print(e)
+        return jsonify({ "error": "Bot Regeneration Failed" }), 500
+
+@app.route('/editbot/sources/drop', methods=['POST'])
+@jwt_required()
+def drop_source_bot():
+    bot_id = request.args.get('id')
+    indexes = list(map(int,request.json['indexes']))
+
+    bot = db.bots.find_one(bot_id)
+    if bot['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    try:
+        old_sources = bot['sources'].copy()
+        bot['sources'] = [ bot['sources'][i] for i in range(len(bot['sources'])) if i not in indexes ]
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':bot['sources']}})
+    except Exception as e:
+        print(e)
+        return jsonify({ "error": "An Error Occured" }), 500
+    try:
+        delete_embeddings(bot['namespace'])
+        namespace = create_embeddings(bot['sources'], bot['domain_name'])
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'namespace':namespace}})
+        return jsonify(success=True)
+    except Exception as e:
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':old_sources}})
         print(e)
         return jsonify({ "error": "Bot Creation Failed" }), 500
+
+
 
 # Chat Routes
 

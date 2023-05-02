@@ -488,11 +488,11 @@ def ask_chatbot():
     bot = db.bots.find_one({'_id':chat['bot_id']})
     owner = db.users.find_one({'_id':bot['owner']})
     if bot["query_count"] > app.config['PLAN_LIMITS'][owner['plan']]['messages']:
-        response = jsonify({ 'answer': app.config["BOT_MSGS_ERR_RESPONSE"] })
+        return jsonify({ 'answer': app.config["BOT_MSGS_ERR_RESPONSE"] })
     if len(qn)>app.config["QUERY_LENGTH_LIMIT"]:
-        response = jsonify({ 'answer': app.config["QUERY_LENGTH_ERR_RESPONSE"] })
+        return jsonify({ 'answer': app.config["QUERY_LENGTH_ERR_RESPONSE"] })
     if not wait_is_ok(chat['last_access']):
-        response = jsonify({ 'answer': app.config["QUERY_WAIT_ERR_RESPONSE"] })
+        return jsonify({ 'answer': app.config["QUERY_WAIT_ERR_RESPONSE"] })
     ans = get_answer(qn, chat['internal_messages'], bot['namespace'], bot['config']['base_prompt'])
     updated_messages = chat['messages'] + [{"role":"user", "content":qn}, {"role":"assisstant", "content":ans['answer']}]
     db.bots.find_one_and_update({'_id':bot['_id']},{'$inc':{'query_count':1}})

@@ -9,10 +9,15 @@ CHATBOT_STATIC_PATH = 'chatbot/build'
 CHATBOT_SCRIPT_FILE = 'chatbot.js'
 
 PLAN_LIMITS = {
-    'Starter':{'bots':5, 'sources':10},
-    'Standard':{'bots':20, 'sources':50},
-    'Premium':{'bots':50, 'sources':200},
+    'Starter':{'bots':5, 'sources':10, 'messages':10000},
+    'Standard':{'bots':20, 'sources':50, 'messages':50000},
+    'Premium':{'bots':50, 'sources':200, 'messages':200000},
 }
+QUERY_LENGTH_LIMIT = 500
+QUERY_WAIT_LIMIT = 10
+QUERY_LENGTH_ERR_RESPONSE = "That was too long. Try again."
+QUERY_WAIT_ERR_RESPONSE = "That was too fast. Slow down."
+BOT_MSGS_ERR_RESPONSE = "The monthly limit of messages for this bot is exceeded."
 
 CHAT_RETAIN_TIME = 60*10
 SOURCE_RETAIN_TIME = 60*60*6

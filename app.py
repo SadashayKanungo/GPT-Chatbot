@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 from flask_cors import CORS, cross_origin
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, current_user, jwt_required, JWTManager, get_csrf_token
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from urllib.parse import urlparse
 import stripe
 import uuid
 import os
@@ -225,7 +226,7 @@ def get_sources():
             'limit':sources_limit,
             'urls': urls,
             'selected': [],
-            'created_at': datetime.now(timezone.utc),
+            'created_at': datetime.utcnow(),
         }
         db.sources.insert_one(new_source)
         return jsonify({'id':new_source['_id']}), 200
@@ -268,18 +269,29 @@ def deselect_url_in_source():
     db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls']}})
     return jsonify(success=True)
 
+# URL parsing functions
+def is_same_domain(url, sitemap_url):
+    sitemap_domain = urlparse(sitemap_url).netloc
+    return urlparse(url).netloc == sitemap_domain
+def is_web_page(url):
+    extensions_to_exclude = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.ico', '.svg', '.pdf', '.mp3', '.mp4', '.avi', '.mkv', '.wav', '.ogg', '.zip', '.tar', '.gz', '.rar', '.7z', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt', '.rtf', '.csv', '.json', '.xml')
+    return not any(url.endswith(ext+'/') for ext in extensions_to_exclude)
+def normalize_url(url):
+        return url if url.endswith('/') else url + '/'
+####
 @app.route('/source/add', methods=['POST'])
 @jwt_required()
 def add_url_in_source():
     source_id = request.args.get('id')
-    new_urls = request.form.get('urls').replace('\r','').split('\n')
-    
+    raw_urls = request.form.get('urls').replace('\r','').split('\n')
+
     source = db.sources.find_one({'_id':source_id})
     if not source:
         return jsonify({ "error": "Source Not Found" }), 404
     if not current_user['token'] or source['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
     
+    new_urls = [ normalize_url(url) for url in raw_urls if is_web_page(url) and is_same_domain(url, source['sitemap_url']) ]
     last_index = max(list(map(int, source['urls'].keys())))
     for url in new_urls:
         last_index += 1
@@ -321,7 +333,8 @@ def generate_new_bot():
                 'initial_messages':["Hi! How may I help you?"],
                 'accent_color': "#000000",
                 'base_prompt': app.config['DEFAULT_BASE_PROMPT']
-            }
+            },
+            'query_count':0
         }
         new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
         new_bot['iframe'] = get_iframe_response(new_bot['_id'], request.host_url)
@@ -377,13 +390,14 @@ def configure_bot():
 @jwt_required()
 def add_source_bot():
     bot_id = request.args.get('id')
-    new_urls = request.form.get('urls').replace('\r','').split('\n')
+    raw_urls = request.form.get('urls').replace('\r','').split('\n')
 
     bot = db.bots.find_one(bot_id)
     if bot['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
     try:
         old_sources = bot['sources'].copy()
+        new_urls = [ normalize_url(url) for url in raw_urls if is_web_page(url) and is_same_domain(url, bot['sitemap_url']) ]
         bot['sources'].extend(new_urls)
         bot['sources'] = list(set(bot['sources']))
         db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':bot['sources']}})
@@ -441,7 +455,7 @@ def start_chatbot():
     
     if prev_chat and prev_chat['bot_id']==bot_id:
         chat = prev_chat
-        db.chats.find_one_and_update({'_id':chat['_id']}, {'$set': {'last_access': datetime.now(timezone.utc)}})
+        db.chats.find_one_and_update({'_id':chat['_id']}, {'$set': {'last_access': datetime.utcnow()}})
     else:
         chat = {
             '_id': uuid.uuid4().hex,
@@ -460,22 +474,34 @@ def start_chatbot():
     response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"], secure=True, httponly=True, samesite='None')
     return response
 
+# Query Wait check
+def wait_is_ok(timestamp):
+    current_time = datetime.utcnow()
+    duration = timedelta(seconds=app.config["QUERY_WAIT_LIMIT"])
+    return (current_time - timestamp) > duration
+
 @app.route('/chat/ask', methods=['POST'])
 def ask_chatbot():
     qa_chain_id = request.args.get('id')
     qn = request.json['question']
     chat = db.chats.find_one({'_id':qa_chain_id})
     bot = db.bots.find_one({'_id':chat['bot_id']})
+    owner = db.users.find_one({'_id':bot['owner']})
+    if bot["query_count"] > app.config['PLAN_LIMITS'][owner['plan']]['messages']:
+        response = jsonify({ 'answer': app.config["BOT_MSGS_ERR_RESPONSE"] })
+    if len(qn)>app.config["QUERY_LENGTH_LIMIT"]:
+        response = jsonify({ 'answer': app.config["QUERY_LENGTH_ERR_RESPONSE"] })
+    if not wait_is_ok(chat['last_access']):
+        response = jsonify({ 'answer': app.config["QUERY_WAIT_ERR_RESPONSE"] })
     ans = get_answer(qn, chat['internal_messages'], bot['namespace'], bot['config']['base_prompt'])
     updated_messages = chat['messages'] + [{"role":"user", "content":qn}, {"role":"assisstant", "content":ans['answer']}]
+    db.bots.find_one_and_update({'_id':bot['_id']},{'$inc':{'query_count':1}})
     db.chats.find_one_and_update({'_id':qa_chain_id}, {'$set': {
         'messages': updated_messages,
         'internal_messages': ans['internal_messages'],
-        'last_access': datetime.now(timezone.utc)
+        'last_access': datetime.utcnow()
     }})
-    response = jsonify({
-        'answer': ans['answer']
-    })
+    response = jsonify({ 'answer': ans['answer'] })
     response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"], secure=True, httponly=True, samesite='None')
     return response
 

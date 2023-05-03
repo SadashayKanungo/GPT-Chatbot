@@ -12,7 +12,7 @@ import os
 
 load_dotenv()
 
-from gpt3 import get_urls_from_sitemap, create_embeddings, delete_embeddings, get_answer
+from gpt3 import get_urls_from_sitemap, create_embeddings, add_urls_to_namespace, delete_embeddings, delete_urls_from_namespace, get_answer
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -120,7 +120,6 @@ def login():
 @app.route('/')
 def home():
     is_signed_in = 'access_token_cookie' in request.cookies
-    print(is_signed_in, request.cookies)
     return render_template('home.html', is_signed_in=is_signed_in)
 
 @app.route('/dashboard/')
@@ -373,7 +372,6 @@ def configure_bot():
         'initial_messages':request.form.get('initial_messages').replace('\r','').split('\n'),
         'base_prompt':request.form.get('base_prompt'),
     }
-    print(new_config)
     
     bot = db.bots.find_one(bot_id)
     if bot['owner'] != current_user['_id']:
@@ -391,28 +389,22 @@ def configure_bot():
 def add_source_bot():
     bot_id = request.args.get('id')
     raw_urls = request.form.get('urls').replace('\r','').split('\n')
-
     bot = db.bots.find_one(bot_id)
+    old_sources = bot['sources'].copy()
     if bot['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
     try:
-        old_sources = bot['sources'].copy()
         new_urls = [ normalize_url(url) for url in raw_urls if is_web_page(url) and is_same_domain(url, bot['sitemap_url']) ]
-        bot['sources'].extend(new_urls)
-        bot['sources'] = list(set(bot['sources']))
-        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':bot['sources']}})
-    except Exception as e:
-        print(e)
-        return jsonify({ "error": "An Error Occured" }), 500
-    try:
-        delete_embeddings(bot['namespace'])
-        namespace = create_embeddings(bot['sources'], bot['domain_name'])
-        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'namespace':namespace}})
+        new_urls = list(set(new_urls))
+        unique_new_urls = [ url for url in new_urls if url not in old_sources ]
+        add_urls_to_namespace(unique_new_urls, bot['namespace'])
+        final_sources = old_sources + unique_new_urls
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':final_sources}})
         return jsonify(success=True)
     except Exception as e:
-        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':old_sources}})
         print(e)
-        return jsonify({ "error": "Bot Regeneration Failed" }), 500
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':old_sources}})
+        return jsonify({ "error": "An Error Occured" }), 500
 
 @app.route('/editbot/sources/drop', methods=['POST'])
 @jwt_required()
@@ -421,26 +413,19 @@ def drop_source_bot():
     indexes = list(map(int,request.json['indexes']))
 
     bot = db.bots.find_one(bot_id)
+    old_sources = bot['sources'].copy()
     if bot['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
     try:
-        old_sources = bot['sources'].copy()
+        urls_to_delete = [ bot['sources'][index] for index in indexes ]
+        delete_urls_from_namespace(urls_to_delete, bot['namespace'])
         bot['sources'] = [ bot['sources'][i] for i in range(len(bot['sources'])) if i not in indexes ]
         db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':bot['sources']}})
-    except Exception as e:
-        print(e)
-        return jsonify({ "error": "An Error Occured" }), 500
-    try:
-        delete_embeddings(bot['namespace'])
-        namespace = create_embeddings(bot['sources'], bot['domain_name'])
-        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'namespace':namespace}})
         return jsonify(success=True)
     except Exception as e:
-        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':old_sources}})
         print(e)
-        return jsonify({ "error": "Bot Creation Failed" }), 500
-
-
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':old_sources}})
+        return jsonify({ "error": "An Error Occured" }), 500
 
 # Chat Routes
 

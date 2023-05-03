@@ -27,6 +27,7 @@ if index_name not in pinecone.list_indexes():
 index = pinecone.Index(index_name)
 
 embed_model = "text-embedding-ada-002"
+max_chunks_per_post = 100
 
 ###################################################################################################################
 
@@ -106,21 +107,57 @@ def extract_data_from(url):
         'text': text,
     }
 
-def pinecone_upsert(data, namespace):
+def split_text(text, chunk_size, overlap):
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    chunks = []
+    index = 0
+    while index < len(sentences):
+        chunk = sentences[index:index + chunk_size]
+        chunks.append(' '.join(chunk))
+        index += chunk_size - overlap
+    return chunks
+
+# updated chunkify function
+def chunkify(data):
+    chunked_data = []
+    for post in data:
+        clean_text = post["text"].replace('\n', ' ')
+        clean_text = re.sub(r' +', ' ', clean_text)
+        clean_text = re.sub(r'^[ \t]*\n', '', clean_text, flags=re.MULTILINE)
+        text_chunks = split_text(clean_text, chunk_size=8, overlap=2)
+
+        chunk_counter = 0
+        for chunk in text_chunks:
+            if chunk_counter >= max_chunks_per_post:
+                break
+            new_post = post.copy()
+            new_post["text"] = chunk
+            chunked_data.append(new_post)
+            chunk_counter += 1
+    for idx, item in enumerate(chunked_data):
+        item['id'] = f"{item['url']}#{idx}"
+    return chunked_data
+
+def add_urls_to_namespace(url_list, namespace):
+    data = []
+    for url in url_list:
+        data.append(extract_data_from(url))
+    chunked_data = chunkify(data)
+    
     batch_size = 100
-    for i in tqdm(range(0, len(data), batch_size)):
+    for i in tqdm(range(0, len(chunked_data), batch_size)):
         # find end of batch
-        i_end = min(len(data), i+batch_size)
-        meta_batch = data[i:i_end]
+        i_end = min(len(chunked_data), i+batch_size)
+        meta_batch = chunked_data[i:i_end]
         ids_batch = [x['id'] for x in meta_batch]
         texts = [x['text'] for x in meta_batch]
         try:
             res = openai.Embedding.create(input=texts, engine=embed_model)
         except Exception as e:
-            print(e)
+            print("ERROR", e)
             done = False
             while not done:
-                sleep(5)
+                time.sleep(5)
                 try:
                     res = openai.Embedding.create(input=texts, engine=embed_model)
                     done = True
@@ -137,46 +174,18 @@ def pinecone_upsert(data, namespace):
         #upsert to Pinecone
         # index.upsert(vectors=to_upsert,namespace=namespace)
 
-def split_text(text, chunk_size, overlap):
-    sentences = re.split(r'(?<=[.!?]) +', text)
-    chunks = []
-    index = 0
-    
-    while index < len(sentences):
-        chunk = sentences[index:index + chunk_size]
-        chunks.append(' '.join(chunk))
-        index += chunk_size - overlap
-
-    return chunks
-
-def chunkify(data):
-    chunked_data = []
-    for post in data:
-        clean_text = post["text"].replace('\n', ' ')
-        clean_text = re.sub(r' +', ' ', clean_text)
-        clean_text = re.sub(r'^[ \t]*\n', '', clean_text, flags=re.MULTILINE)
-        text_chunks = split_text(clean_text, chunk_size=8, overlap=2)
-        for chunk in text_chunks:
-            new_post = post.copy()
-            new_post["text"] = chunk
-            chunked_data.append(new_post)
-    for idx, item in enumerate(chunked_data):
-        item['id'] = f"{item['url']}#{idx}"
-    return chunked_data
-
 def create_embeddings(url_list, domain_name):
-    data = []
-    for url in url_list:
-        data.append(extract_data_from(url))
-    chunked_data = chunkify(data)
     new_namespace = ''.join([c for c in domain_name if c.isalnum()]) + str(round(time.time()*1000))
-    pinecone_upsert(chunked_data, new_namespace)
-    print("Upload successful", new_namespace)
+    add_urls_to_namespace(url_list, new_namespace)
     return new_namespace
 
 def delete_embeddings(namespace):
     index.delete(delete_all=True, namespace=namespace)
 
+def delete_urls_from_namespace(url_list, namespace):
+    for url in url_list:
+        list_of_ids = [url + "#{}".format(i) for i in range(0, 101)]
+        index.delete(ids=list_of_ids, namespace=namespace)
 ###################################################################################################################
 
 CONDENSE_PROMPT = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.

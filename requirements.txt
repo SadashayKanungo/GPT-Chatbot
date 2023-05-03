@@ -56,5 +56,4 @@ urllib3==1.26.15
 uuid==1.30
 Werkzeug==2.2.3
 win32-setctime==1.1.0
-xmltodict==0.13.0
 yarl==1.8.2

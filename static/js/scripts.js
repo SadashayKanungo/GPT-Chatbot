@@ -9,9 +9,8 @@ $("form[name=signup_form").submit(function(e) {
     url: "/user/signup",
     type: "POST",
     data: data,
-    dataType: "application/json",
+    dataType: "json",
     success: function(resp) {
-      console.log(resp);
       // access_token = access_token + resp.access_token
       window.location.href = "/dashboard/";
     },

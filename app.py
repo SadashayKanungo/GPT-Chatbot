@@ -291,6 +291,9 @@ def add_url_in_source():
         return jsonify({ "error": "Not Authorized" }), 401
     
     new_urls = [ normalize_url(url) for url in raw_urls if is_web_page(url) and is_same_domain(url, source['sitemap_url']) ]
+    url_list = [ url['url'] for url in  list(source['urls'].values()) ]
+    new_urls = list(set(new_urls))
+    new_urls = [ url for url in new_urls if url not in url_list ]
     last_index = max(list(map(int, source['urls'].keys())))
     for url in new_urls:
         last_index += 1

@@ -369,6 +369,8 @@
       <h2>Sign in to your account</h2>
       <p>
         Don't have an account? <a href="#register">Create a new account</a>
+        <br>
+        Forgot your Password? <a href="#forgotpwd">No Worries, Click Here</a>
       </p><br>
       <p class="error error--hidden"></p>
     </header>
@@ -408,12 +410,38 @@
         <input name="email" type="email" required><br>
       </label><label>
         Password<br>
-        <input name="password" type="password" required><br>
+        <input name="password" type="password" required minlength="8"><br>
       </label>
     </fieldset>
     
     <footer>
       <button>Join Now!</button>
+    </footer>
+  </div>
+<!-- #register.modal --></form>
+
+<form class="modal" id="forgotpwd" name="forgot_password_form">
+  <a href="#" class="modalClose" hidden></a>
+  <div>
+    <header>
+      <a href="#" class="modalClose icon_logo" hidden>GPT<span>Chatbot</span></a>
+      <h2>Forgot Password</h2>
+      <p>
+        Enter your Registered Email.<br>
+        A Temporary Password will be sent to you.
+      </p><br>
+      <p class="error error--hidden"></p>
+    </header>
+
+    <fieldset>
+      <label>
+        E-Mail<br>
+        <input name="email" type="email" required><br>
+      </label>
+    </fieldset>
+    
+    <footer>
+      <button>Submit</button>
     </footer>
   </div>
 <!-- #register.modal --></form>

@@ -27,6 +27,7 @@ body {
 	--gradientEnd:#507;
   	--red:#ff1111;
   	--red-translucent:#ff6565;
+	--green-translucent: #79d341;
 }
 
 html,body,div,p,h1,h2,h3,h4,h5,h6,
@@ -1161,6 +1162,14 @@ form.onPageForm footer button:hover {
 
 .error--hidden {
   display: none;
+}
+.error--success {
+	background-color: var(--green-translucent);
+  }
+
+.onPageForm #password_reset_error{
+	width: 40%;
+	margin:auto;
 }
 
 /*======================================================================================================*/

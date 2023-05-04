@@ -11,11 +11,18 @@ $("form[name=signup_form").submit(function(e) {
     data: data,
     dataType: "json",
     success: function(resp) {
-      // access_token = access_token + resp.access_token
-      window.location.href = "/dashboard/";
+      $error.addClass("error--success");
+      $error.text(resp.msg).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+        $error.removeClass("error--success");
+      }, 5000);
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
     }
   });
 
@@ -34,12 +41,74 @@ $("form[name=signin_form").submit(function(e) {
     data: data,
     dataType: "json",
     success: function(resp) {
-      console.log(resp);
       // access_token = access_token + resp.access_token
       window.location.href = "/dashboard/";
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
+    }
+  });
+
+  e.preventDefault();
+});
+
+$("form[name=forgot_password_form").submit(function(e) {
+
+  var $form = $(this);
+  var $error = $form.find(".error");
+  var data = $form.serialize();
+
+  $.ajax({
+    url: "/user/forgotpassword",
+    type: "POST",
+    data: data,
+    dataType: "json",
+    success: function(resp) {
+      $error.addClass("error--success");
+      $error.text(resp.msg).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+        $error.removeClass("error--success");
+      }, 5000);
+    },
+    error: function(resp) {
+      $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
+    }
+  });
+
+  e.preventDefault();
+});
+
+$("form[name=password_reset_form").submit(function(e) {
+
+  var $form = $(this);
+  var $error = $form.find(".error");
+  var data = $form.serialize();
+  
+    $.ajax({
+    url: `/user/resetpassword`,
+    type: "POST",
+    data: data,
+    dataType: "json",
+    success: function(resp) {
+      $error.addClass("error--success");
+      $error.text(resp.msg).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+        $error.removeClass("error--success");
+      }, 5000);
+    },
+    error: function(resp) {
+      $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
     }
   });
 
@@ -64,6 +133,9 @@ $("form[name=newbot_form").submit(function(e) {
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
     },
     beforeSend: function () {
       $("#submit").addClass('loader--hidden');
@@ -96,6 +168,9 @@ $("form[name=bot_config_form").submit(function(e) {
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
     }
   });
 
@@ -120,6 +195,9 @@ $("form[name=bot_source_form").submit(function(e) {
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
     },
     beforeSend: function () {
       $("#submit_add").addClass('loader--hidden');
@@ -151,6 +229,9 @@ $("form[name=source_add_form").submit(function(e) {
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
     }
   });
 
@@ -199,6 +280,9 @@ $("#bot_regen_btn").click(function(e) {
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
     },
     beforeSend: function () {
       $("#bot_regen_btn_text").addClass('loader--hidden');
@@ -226,6 +310,9 @@ $("#bot_delete_btn").click(function(e) {
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
     },
   });
   e.preventDefault();

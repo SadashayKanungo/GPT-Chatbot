@@ -30,8 +30,23 @@
       </header>
     <!-- #testimonials --></section>
 
-
-
+    <section>
+      <h3>Reset Password</h3>
+      <form class="onPageForm"  name="password_reset_form">
+        <p id="password_reset_error" class="error error--hidden"></p>
+        <fieldset>
+        <input type="hidden" name="csrf_token" value={{csrf_token}}>
+        <label class="short">
+          New Password<br>
+          <input name="password" type="password" required minlength="8"><br>
+        </label>
+        </fieldset>
+        <footer>
+          <button type="submit">Reset</button>
+        </footer>
+      </form>
+    </section>
+    <br>
 
     <div>
       <section id="pricing">

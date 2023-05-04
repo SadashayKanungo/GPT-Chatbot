@@ -1,11 +1,15 @@
-from flask import Flask, render_template, request, redirect, jsonify, make_response, send_from_directory
+from flask import Flask, render_template, request, redirect, jsonify, make_response, send_from_directory, url_for
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from flask_cors import CORS, cross_origin
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, current_user, jwt_required, JWTManager, get_csrf_token
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 from datetime import datetime, timezone, timedelta
 from urllib.parse import urlparse
+import random
+import string
 import stripe
 import uuid
 import os
@@ -17,10 +21,13 @@ from gpt3 import get_urls_from_sitemap, create_embeddings, add_urls_to_namespace
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
 app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
+app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
 
 jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 CORS(app)
+mail = Mail(app)
+serializer = URLSafeTimedSerializer(os.getenv("MAIL_TOKEN_SECRET"))
 
 client = MongoClient(os.getenv("MONGODB_URL"))
 db = client.gpt_chatbot
@@ -71,7 +78,8 @@ def signup():
         "email": request.form.get('email'),
         "password": request.form.get('password'),
         "token": None,
-        "plan":"Starter"
+        "plan":"Starter",
+        "isVerified":False
     }
 
     # Encrypt the password
@@ -81,17 +89,79 @@ def signup():
     if db.users.find_one({ "email": user['email'] }):
         return jsonify({ "error": "Email address already in use" }), 400
     
-    # Grant Access Token
-    access_token = create_access_token(identity=user)
-    user["token"] = access_token
+    # Send Verification Email
+    try:
+        verification_token = serializer.dumps(user['email'])
+        user_id = user['_id']
+        link = url_for('verify_email', id=user_id, token=verification_token, _external=True)
+        msg = Message('Confirm Email', recipients=[user['email']])
+        msg.body = app.config["VERIFICATION_MAIL_BODY"].format(LINK=link)
+        mail.send(msg)
+        print(msg.body)
+    except Exception as e:
+        print(e)
+        return jsonify({ "error": "Could not send Verification Email"}), 500
     
     # Add to Database
     if db.users.insert_one(user):
-        response = make_response(jsonify(access_token=access_token))
-        response.set_cookie('access_token_cookie', access_token, max_age=app.config["JWT_ACCESS_TOKEN_EXPIRES"])
-        return response
+        return jsonify({ "msg": "Verification Email Sent" }), 200
+    return jsonify({ "error": "Signup failed" }), 500
 
-    return jsonify({ "error": "Signup failed" }), 400
+@app.route('/user/verifyemail')
+def verify_email():
+    user_id = request.args.get("id")
+    verification_token = request.args.get("token")
+    try:
+        email = serializer.loads(verification_token, max_age=app.config["VERIFICATION_TIME_LIMIT"])
+    except SignatureExpired:
+        return render_template("failure.html", text=["This Link has Expired."], link="/", button_text="Home")
+    except BadTimeSignature:
+        return render_template("failure.html", text=["This Link is Invalid."], link="/", button_text="Home")
+
+    user = db.users.find_one({'_id':user_id})
+    if email != user['email']:
+        return render_template("failure.html", text=["This Link is Invalid"], link="/", button_text="Home")
+    
+    # Update Database Database
+    db.users.find_one_and_update({'_id':user_id}, {'$set':{'isVerified':True}})
+    return render_template("success.html", text=["Your Email is verified."], link="/#signIn", button_text="Sign In")
+
+@app.route('/user/forgotpassword', methods=['POST'])
+def forgot_password():
+    user = db.users.find_one({
+        "email": request.form.get('email')
+    })
+
+    if not user:
+        return jsonify({ "error": "User Not Found" }), 401
+    if not user['isVerified']:
+        try:
+            verification_token = serializer.dumps(user['email'])
+            link = '{request.host_url}verifyemail?id={user._id}&token={verification_token}'
+            msg = Message('Confirm Email', recipients=[user['email']])
+            msg.body = app.config["VERIFICATION_MAIL_BODY"].format(LINK=link)
+            mail.send(msg)
+            return jsonify({ "error": "Email Not Verified. Verification Link Sent." }), 401
+        except Exception as e:
+            print(e)
+            return jsonify({ "error": "Could not send Verification Email"}), 500
+
+    # Send Temp Password Email
+    try:
+        temp_password = ''.join(random.choices(string.ascii_letters+string.digits,k=10))
+        hashed_password = bcrypt.generate_password_hash(temp_password)
+        msg = Message('Temporary Password', recipients=[user['email']])
+        msg.body = app.config["PASSWORD_MAIL_BODY"].format(PASSWORD=temp_password)
+        mail.send(msg)
+        print(msg.body)
+    except Exception as e:
+        print(e)
+        return jsonify({ "error": "Could not send Temporary Password"}), 500
+    
+    # Add to Database
+    if db.users.find_one_and_update({'_id':user['_id']}, {'$set':{'password':hashed_password}}):
+        return jsonify({ "msg": "Temporary Password Sent" }), 200
+    return jsonify({ "error": "Password Reset failed" }), 500
 
 @app.route('/user/signout')
 @jwt_required()
@@ -101,13 +171,38 @@ def signout():
     response.delete_cookie('access_token_cookie')
     return response
 
+@app.route('/user/resetpassword', methods=['POST'])
+@jwt_required()
+def reset_password():
+    new_password = request.form.get('password')
+    hashed_password = bcrypt.generate_password_hash(new_password)
+    # Add to Database
+    if db.users.find_one_and_update({'_id':current_user['_id']}, {'$set':{'password':hashed_password}}):
+        return jsonify({ "msg": "Password Reset Successful" }), 200
+    return jsonify({ "error": "Password Reset Failed" }), 500
+
 @app.route('/user/login', methods=['POST'])
 def login():
     user = db.users.find_one({
         "email": request.form.get('email')
     })
 
-    if user and bcrypt.check_password_hash(user['password'], request.form.get('password')):
+    if not user:
+        return jsonify({ "error": "User Not Found" }), 401
+    if not user['isVerified']:
+        try:
+            verification_token = serializer.dumps(user['email'])
+            user_id = user['_id']
+            link = url_for('verify_email', id=user_id, token=verification_token, _external=True)
+            msg = Message('Confirm Email', recipients=[user['email']])
+            msg.body = app.config["VERIFICATION_MAIL_BODY"].format(LINK=link)
+            mail.send(msg)
+            return jsonify({ "error": "Email Not Verified. Verification Link Sent." }), 401
+        except Exception as e:
+            print(e)
+            return jsonify({ "error": "Could not send Verification Email"}), 500
+
+    if bcrypt.check_password_hash(user['password'], request.form.get('password')):
         access_token = create_access_token(identity=user)
         user = db.users.find_one_and_update({'_id':user['_id']}, {'$set': {'token': access_token}})
         response = make_response(jsonify(access_token=access_token))
@@ -137,7 +232,7 @@ def account():
     if not current_user['token']:
         return jsonify({ "error": "Not Authorized" }), 401
 
-    return render_template('account.html', user=current_user)
+    return render_template('account.html', user=current_user, csrf_token=get_csrf_token(current_user['token']))
 
 @app.route('/chatbot/')
 @jwt_required()
@@ -506,12 +601,17 @@ def accent_color():
 
 @app.route("/stripe/success")
 def success():
-    return render_template("success.html")
+    return render_template("success.html", text=[
+        "You have successfully subscribed to a new plan.",
+        "It my take a while for changes to reflect on the website."
+    ], link="/dashboard", button_text="Back to Dashboard")
 
 
 @app.route("/stripe/cancel")
 def cancelled():
-    return render_template("cancel.html")
+    return render_template("failure.html", text=[
+        "Checkout was cancelled",
+    ], link="/dashboard", button_text="Back to Dashboard")
 
 @app.route("/stripe/config")
 def get_publishable_key():

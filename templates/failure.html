@@ -5,13 +5,15 @@
     <main>
         <section class="banner">
         <h2>
-            Womp Womp
+            Oh Snap!
         </h2>
         <p>
-            Checkout was cancelled.
+            {% for line in text %}
+                {{line}}<br>
+            {% endfor %}
         </p>
         <ul class="actions">
-            <li class="featured"><a href="/dashboard">Back to Dashboard</a></li>
+            <li class="featured"><a href="{{link}}">{{button_text}}</a></li>
         </ul>
         <!-- .banner --></section>
     </main>

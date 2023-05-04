@@ -26,6 +26,16 @@ DEFAULT_BASE_PROMPT = """You are a helpful AI assistant. Use the following piece
 If you don't know the answer, just say you don't know. DO NOT try to make up an answer.
 If the question is not related to the context, politely respond that you are tuned to only answer questions that are related to the context."""
 
+MAIL_SERVER = 'smtp.gmail.com'
+MAIL_PORT = 587
+MAIL_USE_TLS = True
+MAIL_USE_SSL = False
+MAIL_USERNAME = 'gptchatbottesting@gmail.com'
+MAIL_DEFAULT_SENDER = 'gptchatbottesting@gmail.com'
+
+VERIFICATION_TIME_LIMIT = 60*60
+VERIFICATION_MAIL_BODY = 'Click here verify your email {LINK}'
+PASSWORD_MAIL_BODY = 'Temporary password for your account is "{PASSWORD}". Make sure to reset it.'
 ### .env configuration
 
 # MONGODB_URL=
@@ -39,14 +49,5 @@ If the question is not related to the context, politely respond that you are tun
 # STRIPE_STANDARD_PRICE_ID=
 # STRIPE_PREMIUM_PRICE_ID=
 # STRIPE_ENDPOINT_SECRET=
-
-
-# Server Limits
-# - Query Length Limit
-# - Individual Post Content Limit
-# - Per Session Messages Limit
-
-# Pricing Limits
-# - Total Pages Limit
-# - Messages Limit
-# - Number of Chatbots
+# MAIL_PASSWORD=
+# MAIL_TOKEN_SECRET=

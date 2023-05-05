@@ -320,6 +320,7 @@ def get_sources():
             'limit':sources_limit,
             'urls': urls,
             'selected': [],
+            'ifBotId': None,
             'created_at': datetime.utcnow(),
         }
         db.sources.insert_one(new_source)
@@ -491,10 +492,16 @@ def add_source_bot():
     old_sources = bot['sources'].copy()
     if bot['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
+    sources_limit = app.config["PLAN_LIMITS"][current_user['plan']]['sources']
+    add_limit = sources_limit - len(bot['sources'])
     try:
         new_urls = [ normalize_url(url) for url in raw_urls if is_web_page(url) and is_same_domain(url, bot['sitemap_url']) ]
         new_urls = list(set(new_urls))
         unique_new_urls = [ url for url in new_urls if url not in old_sources ]
+        if len(unique_new_urls)==0:
+            return jsonify({ "error": "No New Unique URLs to Add"}), 401
+        if len(unique_new_urls)>add_limit:
+            return jsonify({ "error": "Plan Limit Exceeded" }), 401
         add_urls_to_namespace(unique_new_urls, bot['namespace'])
         final_sources = old_sources + unique_new_urls
         db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':final_sources}})
@@ -503,6 +510,73 @@ def add_source_bot():
         print(e)
         db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':old_sources}})
         return jsonify({ "error": "An Error Occured" }), 500
+
+@app.route('/editbot/sources/addsitemap', methods=['POST'])
+@jwt_required()
+def add_sitemap_bot():
+    bot_id = request.args.get('id')
+    sitemap_url = request.form.get('url')
+    bot = db.bots.find_one(bot_id)
+    if not bot:
+        return jsonify({ "error": "Bot Not Found" }), 404
+    sources_limit = app.config["PLAN_LIMITS"][current_user['plan']]['sources']
+    add_limit = sources_limit - len(bot['sources'])
+    try:
+        parsed_urls = get_urls_from_sitemap(sitemap_url, bot['domain_name'])
+        if not parsed_urls:
+            return jsonify({'error':'No URLs Found'}), 500
+        unique_urls = [ url for url in parsed_urls if url not in bot['sources'] ]
+        urls = dict()
+        for i in range(len(unique_urls)):
+            urls[str(i)] = {
+                'index':i,
+                'url':unique_urls[i],
+            }
+        new_source = {
+            '_id':uuid.uuid4().hex,
+            'owner': current_user['_id'],
+            'bot_name': bot['name'],
+            'sitemap_url': bot['sitemap_url'],
+            'domain_name': bot['domain_name'],
+            'limit':add_limit,
+            'urls': urls,
+            'selected': [],
+            'ifBotId': bot['_id'],
+            'created_at': datetime.utcnow(),
+        }
+        db.sources.insert_one(new_source)
+        return jsonify({'id':new_source['_id']}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'error':'Could Not Process Sitemap'}), 500
+
+@app.route('/editbot/sources/addsitemap/submit', methods=['GET'])
+@jwt_required()
+def add_submit_sitemap_bot():
+    bot_id = request.args.get('id')
+    source_id = request.args.get('srcid')
+    bot = db.bots.find_one(bot_id)
+    source = db.sources.find_one({'_id':source_id})
+    if not source:
+        return jsonify({ "error": "Source Not Found" }), 404
+    if not bot:
+        return jsonify({ "error": "Bot Not Found" }), 404
+    if not current_user['token'] or source['owner'] != current_user['_id']:
+        return jsonify({ "error": "Not Authorized" }), 401
+    
+    old_sources = bot['sources'].copy()
+    url_list = [url['url'] for url in source['selected']]
+    try:
+        unique_new_urls = list(set(url_list))
+        add_urls_to_namespace(unique_new_urls, bot['namespace'])
+        final_sources = old_sources + unique_new_urls
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':final_sources}})
+        return jsonify(success=True)
+    except Exception as e:
+        print(e)
+        db.bots.find_one_and_update({'_id':bot_id}, {'$set':{'sources':old_sources}})
+        return jsonify({ "error": "Bot Creation Failed" }), 500
+
 
 @app.route('/editbot/sources/drop', methods=['POST'])
 @jwt_required()

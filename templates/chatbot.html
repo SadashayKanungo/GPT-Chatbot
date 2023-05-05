@@ -98,7 +98,7 @@
 
         <div class="tab">
           <section class="source_container">
-            <h3>Source URLs</h3>
+            <h3>Source URLs ({{bot.sources|length}})</h3>
             <span class="pagination-row">
               <span>
                 <label>URLs per page: </label>
@@ -123,16 +123,31 @@
           </section>
           <br>
     
-          <section>
+          <section class="onPageForm-container">
             <h3>Enter New URLs (New Line Separated)</h3>
             <form class="onPageForm"  name="bot_source_form" data-id="{{bot['_id']}}">
-              <p id="bot_add_err" class="error error--hidden"></p>
+              <p id="bot_add_err" class="error error--hidden center_error"></p>
               <fieldset>
               <input type="hidden" name="csrf_token" value={{csrf_token}}>
               <textarea name="urls" rows="2" width="60%" resize="vertical"></textarea>
               </fieldset>
               <footer>
                 <button type="submit"><span id="submit_add">Add</span> <span id="loader_add" class="loader loader--hidden"></span></button>
+              </footer>
+            </form>
+          </section>
+          <br>
+          
+          <section class="onPageForm-container">
+            <h3>Enter Sitemap</h3>
+            <form class="onPageForm"  name="bot_sitemap_form" data-id="{{bot['_id']}}">
+              <p id="bot_add_err" class="error error--hidden"></p>
+              <fieldset>
+              <input type="hidden" name="csrf_token" value={{csrf_token}}>
+              <input type="url" name="url" required>
+              </fieldset>
+              <footer>
+                <button type="submit"><span id="submit_sitemap">Submit</span> <span id="loader_sitemap" class="loader loader--hidden"></span></button>
               </footer>
             </form>
           </section>

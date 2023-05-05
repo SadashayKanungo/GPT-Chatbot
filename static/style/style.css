@@ -670,7 +670,7 @@ main > div .action {
 	position:relative;
 	display:block;
 	width:100%;
-	height:130vh;
+	height:140vh;
 	padding: 60px 0px;
 	left:0;
 	transition:left 0.5s;
@@ -1111,6 +1111,9 @@ main > div .action {
 .onPageForm label {
 	display:block;
 }
+.onPageForm-container h3 {
+	margin-bottom: 0;
+}
 
 .onPageForm input,
 .onPageForm textarea{
@@ -1127,10 +1130,6 @@ main > div .action {
 	width:100px;
 	height:50px;
 	margin-left: 40px;
-}
-
-.onPageForm footer {
-	padding-top:1em;
 }
 
 form.onPageForm footer button {
@@ -1167,7 +1166,7 @@ form.onPageForm footer button:hover {
 	background-color: var(--green-translucent);
   }
 
-.onPageForm #password_reset_error{
+.onPageForm .center_error{
 	width: 40%;
 	margin:auto;
 }

@@ -190,8 +190,7 @@ $("form[name=bot_source_form").submit(function(e) {
     data: data,
     dataType: "json",
     success: function(resp) {
-      console.log(resp);
-      document.location.reload(true);
+      // document.location.reload(true);
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
@@ -206,6 +205,41 @@ $("form[name=bot_source_form").submit(function(e) {
     complete: function (response) {
       $('#loader_add').addClass('loader--hidden');
       $('#submit_add').removeClass('loader--hidden');
+    }
+  });
+
+  e.preventDefault();
+});
+
+$("form[name=bot_sitemap_form").submit(function(e) {
+
+  var $form = $(this);
+  var $error = $form.find(".error");
+  var data = $form.serialize();
+  var bot_id = $form.attr("data-id");
+  
+    $.ajax({
+    url: `/editbot/sources/addsitemap?id=${bot_id}`,
+    type: "POST",
+    data: data,
+    dataType: "json",
+    success: function(resp) {
+      console.log(resp);
+      window.location.href = `/source?id=${resp.id}`;
+    },
+    error: function(resp) {
+      $error.text(resp.responseJSON.error).removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
+    },
+    beforeSend: function () {
+      $("#submit_sitemap").addClass('loader--hidden');
+      $('#loader_sitemap').removeClass('loader--hidden');
+    },
+    complete: function (response) {
+      $('#loader_sitemap').addClass('loader--hidden');
+      $('#submit_sitemap').removeClass('loader--hidden');
     }
   });
 
@@ -242,14 +276,24 @@ $("form[name=source_add_form").submit(function(e) {
 $("#source_submit_btn").click(function(e) {
   var $error = $("#source_submit_error")
   var $btn = $(this);
-  var source_id = $btn.attr("data-id")
+  var source_id = $btn.attr("data-id");
+  var ifBotId = $btn.attr("data-botId");
+  console.log(ifBotId);
+  if (ifBotId==="None"){
+    var submit_url = `/source/submit?id=${source_id}`;
+    var redirect_url = '/dashboard';
+  } else{
+    var submit_url = `/editbot/sources/addsitemap/submit?id=${ifBotId}&srcid=${source_id}`;
+    var redirect_url = `/chatbot?id=${ifBotId}`;
+  }
+  
   // Perform AJAX call
   $.ajax({
-    url: `/source/submit?id=${source_id}`, // URL of the API endpoint
+    url: `${submit_url}`, // URL of the API endpoint
     type: "GET", // HTTP method
     success: function(data) {
       // Redirect to a new page on successful API call
-      window.location.href = "/dashboard";
+      window.location.href = redirect_url;
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");

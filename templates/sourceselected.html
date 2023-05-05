@@ -26,7 +26,11 @@
         <br><br>
         <p>
           Great! You have selected <strong>{{source['selected']|length}}</strong> URLs<br>
-          Click SUBMIT to create your GPT Chatbot.
+          {% if source.ifBotId is none %}
+            Click CONFIRM to create your GPT Chatbot.
+          {% else %}
+            Click CONFIRM to add them to your GPT Chatbot.
+          {% endif %}
         </p>
 
         <section class="source_container">
@@ -53,8 +57,8 @@
 
         <section class="onPageButton">
           <a href="/source?id={{source['_id']}}">Go Back</a>
-          <button id="source_submit_btn" data-id="{{source['_id']}}">
-            <span id="source_submit_btn_text">Submit</span> <span id="source_submit_btn_loader" class="loader loader--hidden"></span> 
+          <button id="source_submit_btn" data-id="{{source['_id']}}" data-botId="{{source['ifBotId']}}">
+            <span id="source_submit_btn_text">Confirm</span> <span id="source_submit_btn_loader" class="loader loader--hidden"></span> 
           </button>
         </section>
         

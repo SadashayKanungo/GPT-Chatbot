@@ -14,7 +14,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const bot_id = urlParams.get('id');
 const base_url = `${window.location.protocol}//${window.location.host}`;
 
-// const bot_id = "5561514bf2124754a17fd5bf8d1f6d2f";
+// const bot_id = "0cf0ac3143c34d31bc92f73432dc34ee";
 // const base_url = `http://localhost:5000`;
 
 function App() {
@@ -94,7 +94,7 @@ function App() {
       <Chatbot
         config={getConfig(data)}
         messageParser={MessageParser}
-        actionProvider= {(props) => <ActionProvider {...props} ask_url={`${base_url}/chat/ask?id=${data.qa_chain_id}`} />}
+        actionProvider= {(props) => <ActionProvider {...props} ask_url={`${base_url}/chat/ask?id=${data.qa_chain_id}`} show_sources={data.config.show_sources}/>}
       />
       <a class="banner" href={base_url} target='blank'>Powered by <strong>GPTChatbot</strong></a>
     </div>

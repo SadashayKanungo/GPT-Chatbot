@@ -45,11 +45,11 @@
 	background-color: transparent;
 }
 .react-chatbot-kit-chat-message-container {
-  padding: 0px 10px 100px 10px;
+  padding: 0px 10px 0px 10px;
   background-color: var(--backgroundColor);
 	overflow: auto;
   width:calc(100vw-20px);
-  height:calc(100% - 80px);
+  height:calc(100% - 100px);
 }
 
 /******************** Header ********************/
@@ -104,6 +104,23 @@
 
 .react-chatbot-kit-chat-bot-message-arrow {
   border-right: 8px solid var(--messageColor);
+}
+
+.sources{
+  display: block;
+  text-align: center;
+}
+.sources a{
+  display:inline-block;
+  text-decoration:none;
+  margin: 0px 5px;
+  padding: 0px 7px;
+  border-radius: 999px;
+  color: var(--messageTextColor);
+  background-color: #00000022;
+}
+.sources a:hover{
+  background-color: #00000055;
 }
 
 /******************** Input ********************/

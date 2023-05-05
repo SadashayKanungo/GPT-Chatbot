@@ -73,7 +73,6 @@
 
         <div class="tab">
           <section>
-            <h3>Chatbot Settings</h3>
             <form class="onPageForm"  name="bot_config_form" data-id="{{bot['_id']}}">
               <p class="error error--hidden"></p>
               <fieldset>
@@ -84,9 +83,16 @@
                 <textarea name="initial_messages" rows="3">{% for msg in bot.config.initial_messages %}{{msg}}{% if loop.index0 < bot.config.initial_messages|length - 1 %}&#13;&#10;{% endif %}{% endfor %}</textarea>
                 <label>Base Prompt (Passed to GPT Model):</label>
                 <textarea class="wider-textarea" name="base_prompt" rows="4">{{bot.config.base_prompt}}</textarea>
-                <label>Accent Color: 
-                  <input type="color" name="accent_color" width="100px" height="100px" value="{{bot.config.accent_color}}"/>
-                </label>
+                <span class="settings-row">
+                  <label>
+                    Accent Color : 
+                    <input type="color" name="accent_color" width="100px" height="100px" value="{{bot.config.accent_color}}"/>
+                  </label>
+                  <label>
+                    <input type="checkbox" name="show_sources" value="true" {% if bot.config.show_sources %} checked {% endif %}>
+                    Show Sources
+                  </label>
+                </span>
               </fieldset>
               <footer>
                 <button type="submit">Update</button>
@@ -129,7 +135,7 @@
               <p id="bot_add_err" class="error error--hidden center_error"></p>
               <fieldset>
               <input type="hidden" name="csrf_token" value={{csrf_token}}>
-              <textarea name="urls" rows="2" width="60%" resize="vertical"></textarea>
+              <textarea name="urls" rows="3" width="60%" resize="vertical"></textarea>
               </fieldset>
               <footer>
                 <button type="submit"><span id="submit_add">Add</span> <span id="loader_add" class="loader loader--hidden"></span></button>

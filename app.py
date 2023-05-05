@@ -430,7 +430,8 @@ def generate_new_bot():
                 'header_text':f'Conversation with {source["bot_name"]}',
                 'initial_messages':["Hi! How may I help you?"],
                 'accent_color': "#000000",
-                'base_prompt': app.config['DEFAULT_BASE_PROMPT']
+                'base_prompt': app.config['DEFAULT_BASE_PROMPT'],
+                'show_sources': False,
             },
             'query_count':0
         }
@@ -470,6 +471,7 @@ def configure_bot():
         'accent_color': request.form.get('accent_color'),
         'initial_messages':request.form.get('initial_messages').replace('\r','').split('\n'),
         'base_prompt':request.form.get('base_prompt'),
+        'show_sources': request.form.get('show_sources')=="true",
     }
     
     bot = db.bots.find_one(bot_id)
@@ -623,6 +625,7 @@ def start_chatbot():
         }
         db.chats.insert_one(chat)
     
+    bot['config'].pop('base_prompt')
     response = jsonify({
         'qa_chain_id': chat['_id'],
         'messages': chat['messages'],
@@ -645,11 +648,11 @@ def ask_chatbot():
     bot = db.bots.find_one({'_id':chat['bot_id']})
     owner = db.users.find_one({'_id':bot['owner']})
     if bot["query_count"] > app.config['PLAN_LIMITS'][owner['plan']]['messages']:
-        return jsonify({ 'answer': app.config["BOT_MSGS_ERR_RESPONSE"] })
+        return jsonify({ 'answer': app.config["BOT_MSGS_ERR_RESPONSE"], 'sources': [] })
     if len(qn)>app.config["QUERY_LENGTH_LIMIT"]:
-        return jsonify({ 'answer': app.config["QUERY_LENGTH_ERR_RESPONSE"] })
+        return jsonify({ 'answer': app.config["QUERY_LENGTH_ERR_RESPONSE"], 'sources': [] })
     if not wait_is_ok(chat['last_access']):
-        return jsonify({ 'answer': app.config["QUERY_WAIT_ERR_RESPONSE"] })
+        return jsonify({ 'answer': app.config["QUERY_WAIT_ERR_RESPONSE"], 'sources': [] })
     ans = get_answer(qn, chat['internal_messages'], bot['namespace'], bot['config']['base_prompt'])
     updated_messages = chat['messages'] + [{"role":"user", "content":qn}, {"role":"assisstant", "content":ans['answer']}]
     db.bots.find_one_and_update({'_id':bot['_id']},{'$inc':{'query_count':1}})
@@ -658,7 +661,7 @@ def ask_chatbot():
         'internal_messages': ans['internal_messages'],
         'last_access': datetime.utcnow()
     }})
-    response = jsonify({ 'answer': ans['answer'] })
+    response = jsonify({ 'answer': ans['answer'], 'sources': ans['sources'] })
     response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"], secure=True, httponly=True, samesite='None')
     return response
 

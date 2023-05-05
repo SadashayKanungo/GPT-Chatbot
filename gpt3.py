@@ -172,7 +172,7 @@ def add_urls_to_namespace(url_list, namespace):
         } for x in meta_batch]
         to_upsert = list(zip(ids_batch, embeds, meta_batch))
         #upsert to Pinecone
-        # index.upsert(vectors=to_upsert,namespace=namespace)
+        index.upsert(vectors=to_upsert,namespace=namespace)
 
 def create_embeddings(url_list, domain_name):
     new_namespace = ''.join([c for c in domain_name if c.isalnum()]) + str(round(time.time()*1000))
@@ -208,8 +208,11 @@ def get_source_documents(query, namespace):
         xq = res['data'][0]['embedding']
         top_k = 4
         pinecone_results = index.query(xq, top_k=top_k, namespace=namespace, include_metadata=True)
+        # print("Pinecone Matches", pinecone_results)
         contexts = [x['metadata']['text'] for x in pinecone_results['matches']]
-        return contexts
+        sources = [x['metadata']['url'] for x in pinecone_results['matches']]
+        sources = list(dict.fromkeys(sources))
+        return [contexts, sources]
 
 def get_answer(question, internal_messages, namespace, base_prompt):
     # Check if it's a follow-up question (i.e., not the first user message)
@@ -233,7 +236,7 @@ def get_answer(question, internal_messages, namespace, base_prompt):
             standalone_question = question
 
         # Retrieve source documents
-        source_documents = get_source_documents(standalone_question, namespace)
+        source_documents, source_urls = get_source_documents(standalone_question, namespace)
         # print("Context: "+"\n"+source_documents+"\n")
 
         internal_messages.append({"role": "user", "content": standalone_question})
@@ -248,5 +251,6 @@ def get_answer(question, internal_messages, namespace, base_prompt):
         internal_messages.append({"role": "assistant", "content": answer})
         return {
             'answer': answer,
+            'sources': source_urls,
             'internal_messages':internal_messages
         }

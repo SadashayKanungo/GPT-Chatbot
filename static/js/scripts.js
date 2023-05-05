@@ -163,7 +163,6 @@ $("form[name=bot_config_form").submit(function(e) {
     data: data,
     dataType: "json",
     success: function(resp) {
-      console.log(resp);
       document.location.reload(true);
     },
     error: function(resp) {

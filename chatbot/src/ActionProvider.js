@@ -2,7 +2,7 @@ import React from 'react';
 import axios from 'axios';
 
 
-const ActionProvider = ({ createChatBotMessage, setState, children, ask_url}) => {
+const ActionProvider = ({ createChatBotMessage, setState, children, ask_url, show_sources}) => {
   // console.log(ask_url);
   const handleQuery = async (question) => {
     document.getElementById("header").style.display = "none";
@@ -11,11 +11,21 @@ const ActionProvider = ({ createChatBotMessage, setState, children, ask_url}) =>
     try {
       const {data} = await axios.post(ask_url, {question});
       const botMessage = createChatBotMessage(data.answer);
-
       setState((prev) => ({
         ...prev,
         messages: [...prev.messages, botMessage],
       }));
+      if(show_sources && data.sources.length){
+        const botMessageSrc = createChatBotMessage(
+          <span class="sources"> Sources: 
+            {data.sources.map((src,i) => <a href={src}>{i+1}</a>)}
+          </span>
+        );
+        setState((prev) => ({
+          ...prev,
+          messages: [...prev.messages, botMessageSrc],
+        }));
+      }
     } catch (error) {
       const botError = createChatBotMessage("An error occured :(");
       console.error(error.message);

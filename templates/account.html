@@ -58,59 +58,24 @@
           </p>
         </header>
 
-        <article>
-          <h3><span>Starter</span>&#8377;0<small> /month</small></h3>
-          <p>
-            Good for anyone who is self-employed and just getting started.
-          </p>
-          {% if user['plan'] == "Starter" %}
-            <button type="submit" class="action" disabled><i>&#10004;</i></button>
-          {% else %}
-            <button type="submit" class="action" disabled><i>&#8212;</i></button>
-          {% endif %}
-          <ul>
-            <li>Create 5 Chatbots</li>
-            <li>10 Source URLs per Chatbot</li>
-            <li>10K Queries</li>
-            
-          </ul>
-        </article>
-
-        <article class="featured">
-          <h3><span>Standard</span>&#8377;499<small> /month</small></h3>
-          <p>
-            Perfect for small / medium sized businesses.
-          </p>
-          {% if user['plan'] == "Standard" %}
-            <button type="submit" class="action" disabled><i>&#10004;</i></button>
-          {% elif user['plan'] == "Premium" %}
-            <button type="submit" class="action" disabled><i>&#8212;</i></button>
-          {% else %}
-            <button type="submit" class="action" id="buyStandard">Subscribe</button>
-          {% endif %}
-          <ul>
-            <li>Create 20 Chatbots</li>
-            <li>50 Source URLs per Chatbot</li>
-            <li>50K Queries</li>
-          </ul>
-        </article>
-
-        <article>
-          <h3><span>Premium</span>&#8377;999<small> /month</small></h3>
-          <p>
-            For even the biggest enterpise companies.
-          </p>
-          {% if user['plan'] == "Premium" %}
-            <button type="submit" class="action" disabled><i>&#10004;</i></button>
-          {% else %}
-            <button type="submit" class="action" id="buyPremium">Subscribe</button>
-          {% endif %}
-          <ul>
-            <li>Create 50 Chatbots</li>
-            <li>200 Source URLs per Chatbot</li>
-            <li>200K Queries</li>
-          </ul>
-        </article>
+        {% for plan,detail in plan_details.items() %}
+          <article class="{% if user['plan']==plan %} featured {% endif %}">
+            <h3><span>{{plan}}</span>&#8377;{{ "{:,.0f}".format(detail.price) }}<small> /month</small></h3>
+            <p>
+              Good for anyone who is self-employed and just getting started.
+            </p>
+            {% if user['plan'] == plan %}
+              <button type="submit" class="action" disabled><i>&#10004;</i></button>
+            {% else %}
+              <button type="submit" class="action stripe-btn" data-plan="{{plan}}"><i>Subscribe</i></button>
+            {% endif %}
+            <ul>
+              <li>Create {{ "{:,.0f}".format(detail.bots) }} Chatbots</li>
+              <li>{{ "{:,.0f}".format(detail.sources) }} Source URLs per Chatbot</li>
+              <li>{{ "{:,.0f}".format(detail.messages // 1000) }}K Monthly Queries</li>
+            </ul>
+          </article>
+        {% endfor %}
 
       <!-- #pricing --></section>
     </div>
@@ -142,5 +107,7 @@
   </footer>
 
 </div>
+
+<script src="/static/js/stripe.js"></script>
 
 {% endblock %}

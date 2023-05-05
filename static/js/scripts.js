@@ -189,7 +189,7 @@ $("form[name=bot_source_form").submit(function(e) {
     data: data,
     dataType: "json",
     success: function(resp) {
-      // document.location.reload(true);
+      document.location.reload(true);
     },
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");

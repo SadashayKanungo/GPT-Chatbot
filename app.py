@@ -49,8 +49,6 @@ else:
 stripe_keys = {
     "secret_key": os.environ["STRIPE_SECRET_KEY"],
     "publishable_key": os.environ["STRIPE_PUBLISHABLE_KEY"],
-    "standard_price_id": os.environ["STRIPE_STANDARD_PRICE_ID"],
-    "premium_price_id": os.environ["STRIPE_PREMIUM_PRICE_ID"],
     "endpoint_secret": os.environ["STRIPE_ENDPOINT_SECRET"],
 }
 stripe.api_key = stripe_keys["secret_key"]
@@ -78,7 +76,8 @@ def signup():
         "email": request.form.get('email'),
         "password": request.form.get('password'),
         "token": None,
-        "plan":"Starter",
+        "plan": list(dict.fromkeys(app.config['PLAN_DETAILS']))[0],
+        "stripe_subscription_id": None,
         "isVerified":False
     }
 
@@ -232,7 +231,7 @@ def account():
     if not current_user['token']:
         return jsonify({ "error": "Not Authorized" }), 401
 
-    return render_template('account.html', user=current_user, csrf_token=get_csrf_token(current_user['token']))
+    return render_template('account.html', user=current_user, plan_details=app.config['PLAN_DETAILS'], csrf_token=get_csrf_token(current_user['token']))
 
 @app.route('/chatbot/')
 @jwt_required()
@@ -293,13 +292,13 @@ def sourceselected():
 @jwt_required()
 def get_sources():
     user_bot_count = db.bots.count_documents({"owner":current_user['_id']})
-    if user_bot_count >= app.config["PLAN_LIMITS"][current_user['plan']]['bots']:
+    if user_bot_count >= app.config["PLAN_DETAILS"][current_user['plan']]['bots']:
         return jsonify({ "error": "Plan Limit Reached" }), 400
     
     bot_name = request.form.get('name')
     sitemap_url = request.form.get('url')
     domain_name = request.form.get('domain')
-    sources_limit = app.config["PLAN_LIMITS"][current_user['plan']]['sources']
+    sources_limit = app.config["PLAN_DETAILS"][current_user['plan']]['sources']
 
     try:
         parsed_urls = get_urls_from_sitemap(sitemap_url, domain_name)
@@ -404,7 +403,7 @@ def add_url_in_source():
 @jwt_required()
 def generate_new_bot():
     user_bot_count = db.bots.count_documents({"owner":current_user['_id']})
-    if user_bot_count >= app.config["PLAN_LIMITS"][current_user['plan']]['bots']:
+    if user_bot_count >= app.config["PLAN_DETAILS"][current_user['plan']]['bots']:
         return jsonify({ "error": "Plan Limit reached" }), 400
 
     source_id = request.args.get('id')
@@ -494,7 +493,7 @@ def add_source_bot():
     old_sources = bot['sources'].copy()
     if bot['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
-    sources_limit = app.config["PLAN_LIMITS"][current_user['plan']]['sources']
+    sources_limit = app.config["PLAN_DETAILS"][current_user['plan']]['sources']
     add_limit = sources_limit - len(bot['sources'])
     try:
         new_urls = [ normalize_url(url) for url in raw_urls if is_web_page(url) and is_same_domain(url, bot['sitemap_url']) ]
@@ -521,7 +520,7 @@ def add_sitemap_bot():
     bot = db.bots.find_one(bot_id)
     if not bot:
         return jsonify({ "error": "Bot Not Found" }), 404
-    sources_limit = app.config["PLAN_LIMITS"][current_user['plan']]['sources']
+    sources_limit = app.config["PLAN_DETAILS"][current_user['plan']]['sources']
     add_limit = sources_limit - len(bot['sources'])
     try:
         parsed_urls = get_urls_from_sitemap(sitemap_url, bot['domain_name'])
@@ -647,7 +646,7 @@ def ask_chatbot():
     chat = db.chats.find_one({'_id':qa_chain_id})
     bot = db.bots.find_one({'_id':chat['bot_id']})
     owner = db.users.find_one({'_id':bot['owner']})
-    if bot["query_count"] > app.config['PLAN_LIMITS'][owner['plan']]['messages']:
+    if bot["query_count"] > app.config['PLAN_DETAILS'][owner['plan']]['messages']:
         return jsonify({ 'answer': app.config["BOT_MSGS_ERR_RESPONSE"], 'sources': [] })
     if len(qn)>app.config["QUERY_LENGTH_LIMIT"]:
         return jsonify({ 'answer': app.config["QUERY_LENGTH_ERR_RESPONSE"], 'sources': [] })
@@ -681,14 +680,14 @@ def success():
     return render_template("success.html", text=[
         "You have successfully subscribed to a new plan.",
         "It my take a while for changes to reflect on the website."
-    ], link="/dashboard", button_text="Back to Dashboard")
+    ], link="/account", button_text="Back to Account")
 
 
 @app.route("/stripe/cancel")
 def cancelled():
     return render_template("failure.html", text=[
         "Checkout was cancelled",
-    ], link="/dashboard", button_text="Back to Dashboard")
+    ], link="/account", button_text="Back to Account")
 
 @app.route("/stripe/config")
 def get_publishable_key():
@@ -698,20 +697,13 @@ def get_publishable_key():
 @app.route("/stripe/create-checkout-session")
 @jwt_required()
 def create_checkout_session():
-    domain_url = request.host_url
-    stripe.api_key = stripe_keys["secret_key"]
     plan = request.args.get('plan')
-    price_of_plan = {
-        'Standard': stripe_keys["standard_price_id"],
-        'Premium': stripe_keys["premium_price_id"]
-    }
-    price_id = price_of_plan[plan]
-
+    price_id = app.config['PLAN_DETAILS'][plan]['price_id']
     try:
         checkout_session = stripe.checkout.Session.create(
             client_reference_id=current_user['_id'],
-            success_url=domain_url + "stripe/success?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=domain_url + "stripe/cancel",
+            success_url = request.host_url + "stripe/success?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url = request.host_url + "stripe/cancel",
             payment_method_types=["card"],
             mode="subscription",
             line_items=[
@@ -752,9 +744,19 @@ def stripe_webhook():
     return "Success", 200
 
 def handle_checkout_session(session):
+    # print(session)
     buyer_id = session["client_reference_id"]
-    plan = session.line_items.data[0]["description"]
-    db.users.find_one_and_update({'_id':buyer_id}, {'$set': {'plan': plan}})
+    price_id = session.line_items.data[0]["price"]["id"]
+    new_sub_id = session['subscription']
+    plan = app.config['PRICE_PLAN_MAP'][price_id]
+    
+    buyer = db.users.find_one({'_id':buyer_id})
+    old_sub_id = buyer['stripe_subscription_id']
+    if old_sub_id:
+        old_subscription = stripe.Subscription.retrieve(old_sub_id)
+        old_subscription.cancel()
+    
+    db.users.find_one_and_update({'_id':buyer_id}, {'$set': {'plan': plan, 'stripe_subscription_id':new_sub_id}})
     print("Subscription was successful. Database Updated.", buyer_id, plan)
 
 

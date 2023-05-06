@@ -9,12 +9,12 @@ CHATBOT_STATIC_PATH = 'chatbot/build'
 CHATBOT_SCRIPT_FILE = 'chatbot.js'
 
 PLAN_DETAILS = {
-    'Plan1':{'bots':10, 'sources':5, 'messages':10000, 'price':0, 'price_id':'price_1N4PjhSIvRxVpGZl9SwQ19S1'},
-    'Plan2':{'bots':20, 'sources':20, 'messages':20000, 'price':999, 'price_id':'price_1N4PjhSIvRxVpGZlm0E2XEm1'},
-    'Plan3':{'bots':50, 'sources':50, 'messages':50000, 'price':1999, 'price_id':'price_1N4PjhSIvRxVpGZlNGMCT4ir'},
-    'Plan4':{'bots':100, 'sources':100, 'messages':100000, 'price':4999, 'price_id':'price_1N4PjhSIvRxVpGZl1K9Mrn84'},
-    'Plan5':{'bots':200, 'sources':200, 'messages':200000, 'price':9999, 'price_id':'price_1N4PjhSIvRxVpGZltjCiJjva'},
-    'Plan6':{'bots':500, 'sources':500, 'messages':500000, 'price':19999, 'price_id':'price_1N4PjhSIvRxVpGZlAl6ADOjJ'},
+    'Plan1':{'bots':1, 'sources':5, 'messages':10000, 'price':0, 'price_id':'price_1N4q9cIqbPL5X1upGVnE3tNG'},
+    'Plan2':{'bots':20, 'sources':20, 'messages':20000, 'price':999, 'price_id':'price_1N4q7OIqbPL5X1upIspqntW2'},
+    'Plan3':{'bots':50, 'sources':50, 'messages':50000, 'price':1999, 'price_id':'price_1N4q7OIqbPL5X1upaKAZOSaJ'},
+    'Plan4':{'bots':100, 'sources':100, 'messages':100000, 'price':4999, 'price_id':'price_1N4q7OIqbPL5X1upFcwP8ZAL'},
+    'Plan5':{'bots':200, 'sources':200, 'messages':200000, 'price':9999, 'price_id':'price_1N4q7OIqbPL5X1upu5WC09EX'},
+    'Plan6':{'bots':500, 'sources':500, 'messages':500000, 'price':19999, 'price_id':'price_1N4q7OIqbPL5X1upPYf1hMVX'},
 }
 PRICE_PLAN_MAP = { detail['price_id']: plan for plan,detail in PLAN_DETAILS.items() }
 BLOCKED_PLAN = "Blocked"
@@ -33,12 +33,12 @@ DEFAULT_BASE_PROMPT = """You are a helpful AI assistant. Use the following piece
 If you don't know the answer, just say you don't know. DO NOT try to make up an answer.
 If the question is not related to the context, politely respond that you are tuned to only answer questions that are related to the context."""
 
-MAIL_SERVER = 'smtp.gmail.com'
-MAIL_PORT = 587
-MAIL_USE_TLS = True
-MAIL_USE_SSL = False
-MAIL_USERNAME = 'gptchatbottesting@gmail.com'
-MAIL_DEFAULT_SENDER = 'gptchatbottesting@gmail.com'
+MAIL_SERVER = 's24.wpx.net'
+MAIL_PORT = 465
+MAIL_USE_TLS = False
+MAIL_USE_SSL = True
+MAIL_USERNAME = 'support@elephant.ai'
+MAIL_DEFAULT_SENDER = 'support@elephant.ai'
 
 VERIFICATION_TIME_LIMIT = 60*60
 VERIFICATION_MAIL_BODY = 'Click here verify your email {LINK}'

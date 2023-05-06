@@ -806,14 +806,14 @@ def stripe_webhook():
         #     # Cancel Subscription and Update database
         #     cancel_sub_block_acc(subscription_id)
         
-        # elif event['type'] == 'customer.subscription.updated':
-        #     # Retrieve the subscription and customer IDs from the event data
-        #     subscription_id = event["data"]["object"]['id']
-        #     subscription_status = event["data"]["object"]['status']
-        #     # If the subscription status is 'incomplete', the initial payment failed
-        #     if subscription_status == 'incomplete':
-        #         print("SUBSCRIPTION UPDATED INCOMPLETE")
-        #         cancel_sub_block_acc(subscription_id)
+        elif event['type'] == 'customer.subscription.updated':
+            # Retrieve the subscription and customer IDs from the event data
+            subscription_id = event["data"]["object"]['id']
+            subscription_status = event["data"]["object"]['status']
+            # If the subscription status is 'incomplete', the initial payment failed
+            if subscription_status == 'past_due':
+                print("SUBSCRIPTION UPDATED PAST DUE")
+                cancel_sub_block_acc(subscription_id)
         
         return 'Success', 200
     

@@ -93,29 +93,85 @@ def get_urls_from_sitemap(sitemap_url, domain_name):
 ###################################################################################################################
 
 def extract_data_from(url):
-    html = requests.get(url, headers={
-        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"
-    }).text
+    try:
+        html = requests.get(url, headers={
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"
+        }).text
+    except requests.exceptions.RequestException as e:
+        return {
+            'error': f"Failed to fetch the URL: {e}"
+        }
+
     soup = BeautifulSoup(html, features="html.parser")
-    raw_text = soup.get_text()
-    lines = (line.strip() for line in raw_text.splitlines())
-    text = '\n'.join(line for line in lines if line)
-    title = soup.title.string
+
+    # Extract headers till H4
+    headers = soup.find_all(['h1', 'h2', 'h3', 'h4'])
+
+    # Generate TOC
+    toc_counts = [0, 0, 0, 0]
+    toc = "Table of Contents\n"
+    for header in headers:
+        level = int(header.name[1])
+        toc_counts[level - 1] += 1
+        for i in range(level, len(toc_counts)):
+            toc_counts[i] = 0
+
+        toc_number = '.'.join(str(x) for x in toc_counts[:level] if x > 0)
+        toc += f"{toc_number} {header.get_text(strip=True)}\n"
+
+    try:
+        raw_text = soup.get_text()
+        lines = (line.strip() for line in raw_text.splitlines())
+        text = '\n'.join(line for line in lines if line)
+    except Exception as e:
+        text = f"Failed to extract text from the HTML: {e}"
+
+    try:
+        title = soup.title.string
+    except Exception as e:
+        title = "Failed to extract title from the HTML"
+
+    # Prepend TOC to the text
+    text_with_toc = f"{toc}\n{text}"
+
     return {
         'url': url,
         'title': title,
-        'text': text,
+        'text': text_with_toc,
     }
 
-def split_text(text, chunk_size, overlap):
-    sentences = re.split(r'(?<=[.!?]) +', text)
-    chunks = []
-    index = 0
-    while index < len(sentences):
-        chunk = sentences[index:index + chunk_size]
-        chunks.append(' '.join(chunk))
-        index += chunk_size - overlap
-    return chunks
+def split_text(text, chunk_size, chunk_overlap, split_chars=None, length_function=len):
+    split_chars = split_chars or ["\n\n", "\n", " ", ""]
+
+    def recursive_split(text, split_char_index):
+        if split_char_index >= len(split_chars):
+            return [text]
+
+        split_char = split_chars[split_char_index]
+        segments = text.split(split_char)
+
+        chunks = []
+        for segment in segments:
+            if length_function(segment) > chunk_size:
+                sub_chunks = recursive_split(segment, split_char_index + 1)
+                chunks.extend(sub_chunks)
+            else:
+                chunks.append(segment)
+
+        result = []
+        index = 0
+        while index < len(chunks):
+            chunk = chunks[index]
+            next_index = index + 1
+            while next_index < len(chunks) and length_function(chunk + split_char + chunks[next_index]) <= chunk_size:
+                chunk += split_char + chunks[next_index]
+                next_index += 1
+            result.append(chunk)
+            index += max(1, next_index - index - chunk_overlap)
+
+        return result
+
+    return recursive_split(text, 0)
 
 # updated chunkify function
 def chunkify(data):
@@ -124,7 +180,7 @@ def chunkify(data):
         clean_text = post["text"].replace('\n', ' ')
         clean_text = re.sub(r' +', ' ', clean_text)
         clean_text = re.sub(r'^[ \t]*\n', '', clean_text, flags=re.MULTILINE)
-        text_chunks = split_text(clean_text, chunk_size=8, overlap=2)
+        text_chunks = split_text(clean_text, chunk_size=800, chunk_overlap=160)
 
         chunk_counter = 0
         for chunk in text_chunks:

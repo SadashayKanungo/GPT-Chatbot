@@ -65,9 +65,12 @@
               Good for anyone who is self-employed and just getting started.
             </p>
             {% if user['plan'] == plan %}
-              <button type="submit" class="action" disabled><i>&#10004;</i></button>
+              <button type="submit" class="action stripe-cancel-btn" 
+                {% if user.stripe_subscription_id is none %} disabled {% endif %}>
+                <i>{% if user.stripe_subscription_id is none %} &#10004; {% else %} disabled {% endif %}</i>
+              </button>
             {% else %}
-              <button type="submit" class="action stripe-btn" data-plan="{{plan}}"><i>Subscribe</i></button>
+              <button type="submit" class="action stripe-subscribe-btn" data-plan="{{plan}}"><i>Subscribe</i></button>
             {% endif %}
             <ul>
               <li>Create {{ "{:,.0f}".format(detail.bots) }} Chatbots</li>

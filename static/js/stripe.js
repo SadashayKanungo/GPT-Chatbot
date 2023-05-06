@@ -9,7 +9,7 @@ fetch("/stripe/config")
   const stripe = Stripe(data.publicKey);
 
   // Event handler
-  const btns = document.querySelectorAll('.stripe-btn');
+  const btns = document.querySelectorAll('.stripe-subscribe-btn');
   btns.forEach(btn => {
     var plan = btn.getAttribute('data-plan');
     // console.log(plan);
@@ -25,6 +25,19 @@ fetch("/stripe/config")
       .then((res) => {
         // console.log(res);
       });
+    });
+  });
+});
+
+// Event handler
+const btns = document.querySelectorAll('.stripe-cancel-btn');
+btns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    // Get Checkout Session ID
+    fetch(`/cancelsubscription`)
+    .then((result) => { return result.json(); })
+    .then(() => {
+      window.location.reload()
     });
   });
 });

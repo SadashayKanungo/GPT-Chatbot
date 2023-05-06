@@ -673,6 +673,21 @@ def accent_color():
         return jsonify({ "error": "Bot Not Found" }), 404
     return jsonify(accent_color=bot['config']['accent_color'])
 
+# Cancel Subscription
+@app.route('/cancelsubscription', methods=['GET'])
+@jwt_required()
+def cancel_customer_subscription():
+    try: 
+        subscription_id = current_user['stripe_subscription_id']
+        if subscription_id:
+            cancel_subscription(subscription_id)
+            return jsonify(success=True), 200
+        else:
+            return jsonify({ "error": "Cannot Cancel Default Plan" }), 401
+    except Exception as e:
+        print(e)
+        return jsonify({ "error": "Subscription Cancellation Failed" }), 500
+
 # Stripe Endpoints
 
 @app.route("/stripe/success")
@@ -735,13 +750,33 @@ def stripe_webhook():
         return "Invalid signature", 400
 
     # Handle the checkout.session.completed event
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        expanded_session = stripe.checkout.Session.retrieve(session.id, expand=["line_items"])
-        # Fulfill the purchase...
-        handle_checkout_session(expanded_session)
+    try:
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            expanded_session = stripe.checkout.Session.retrieve(session.id, expand=["line_items"])
+            # Fulfill the purchase...
+            handle_checkout_session(expanded_session)
+        
+        elif event['type'] == 'invoice.payment_failed':
+            # Retrieve the subscription and customer IDs from the event data
+            subscription_id = event["data"]["object"]['subscription']
+            # Cancel Subscription and Update database
+            cancel_subscription(subscription_id)
+        
+        elif event['type'] == 'customer.subscription.updated':
+            # Retrieve the subscription and customer IDs from the event data
+            subscription_id = event["data"]["object"]['id']
+            subscription_status = event["data"]["object"]['status']
+            # If the subscription status is 'incomplete', the initial payment failed
+            if subscription_status == 'incomplete':
+                cancel_subscription(subscription_id)
+        
+        return 'Success', 200
+    
+    except stripe.error.SignatureVerificationError:
+        # Invalid signature, return a 400 error
+        return 'Error', 400
 
-    return "Success", 200
 
 def handle_checkout_session(session):
     # print(session)
@@ -757,7 +792,16 @@ def handle_checkout_session(session):
         old_subscription.cancel()
     
     db.users.find_one_and_update({'_id':buyer_id}, {'$set': {'plan': plan, 'stripe_subscription_id':new_sub_id}})
-    print("Subscription was successful. Database Updated.", buyer_id, plan)
+    print("STRIPE SUBSCRIPTION SUCCESSFUL", buyer_id, plan)
+
+def cancel_subscription(subscription_id):
+    subscription = stripe.Subscription.retrieve(subscription_id)
+    subscription.cancel()
+
+    default_plan = list(dict.fromkeys(app.config['PLAN_DETAILS']))[0]
+    db.users.find_one_and_update({'stripe_subscription_id':subscription_id}, {'$set':{'plan':default_plan, 'stripe_subscription_id':None}})
+
+    print("STRIPE SUBSCRIPTION CANCELLED", subscription_id)
 
 
 if __name__ == "__main__":

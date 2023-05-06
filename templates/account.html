@@ -56,7 +56,9 @@
           <p>
             It doesn't matter what size your business is, our software works well for you.
           </p>
+          <p id="subscribe_error" class="error error--hidden"></p>
         </header>
+        
 
         {% for plan,detail in plan_details.items() %}
           <article class="{% if user['plan']==plan %} featured {% endif %}">
@@ -67,7 +69,7 @@
             {% if user['plan'] == plan %}
               <button type="submit" class="action stripe-cancel-btn" 
                 {% if user.stripe_subscription_id is none %} disabled {% endif %}>
-                <i>{% if user.stripe_subscription_id is none %} &#10004; {% else %} disabled {% endif %}</i>
+                <i>{% if user.stripe_subscription_id is none %} &#10004; {% else %} Cancel {% endif %}</i>
               </button>
             {% else %}
               <button type="submit" class="action stripe-subscribe-btn" data-plan="{{plan}}"><i>Subscribe</i></button>

@@ -16,14 +16,27 @@ fetch("/stripe/config")
     btn.addEventListener("click", () => {
       // Get Checkout Session ID
       fetch(`/stripe/create-checkout-session?plan=${plan}`)
-      .then((result) => { return result.json(); })
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          response.json().then(data => {
+            const errorMessage = data.error;
+            console.log(errorMessage);
+            const errorParagraph = document.querySelector('#subscribe_error');
+            errorParagraph.innerText = errorMessage;
+            errorParagraph.classList.remove("error--hidden");
+            setTimeout(()=>{
+              errorParagraph.innerText = "";
+              errorParagraph.classList.add("error--hidden");
+            }, 10000);
+          })
+        }
+      })
       .then((data) => {
         // console.log(data);
         // Redirect to Stripe Checkout
         return stripe.redirectToCheckout({sessionId: data.sessionId})
-      })
-      .then((res) => {
-        // console.log(res);
       });
     });
   });

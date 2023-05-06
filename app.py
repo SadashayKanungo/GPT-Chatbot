@@ -291,6 +291,9 @@ def sourceselected():
 @app.route('/newsource', methods=['POST'])
 @jwt_required()
 def get_sources():
+    if current_user['plan']==app.config["BLOCKED_PLAN"]:
+        return jsonify({ "error": "Account Blocked, Renew your subscription" }), 400
+    
     user_bot_count = db.bots.count_documents({"owner":current_user['_id']})
     if user_bot_count >= app.config["PLAN_DETAILS"][current_user['plan']]['bots']:
         return jsonify({ "error": "Plan Limit Reached" }), 400
@@ -402,6 +405,9 @@ def add_url_in_source():
 @app.route('/source/submit', methods=['GET'])
 @jwt_required()
 def generate_new_bot():
+    if current_user['plan']==app.config["BLOCKED_PLAN"]:
+        return jsonify({ "error": "Account Blocked, Renew your subscription" }), 400
+
     user_bot_count = db.bots.count_documents({"owner":current_user['_id']})
     if user_bot_count >= app.config["PLAN_DETAILS"][current_user['plan']]['bots']:
         return jsonify({ "error": "Plan Limit reached" }), 400
@@ -432,7 +438,8 @@ def generate_new_bot():
                 'base_prompt': app.config['DEFAULT_BASE_PROMPT'],
                 'show_sources': False,
             },
-            'query_count':0
+            'query_count':0,
+            'last_query_count_reset': datetime.utcnow(),
         }
         new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
         new_bot['iframe'] = get_iframe_response(new_bot['_id'], request.host_url)
@@ -464,6 +471,9 @@ def delete_bot():
 @app.route('/editbot/config', methods=['POST'])
 @jwt_required()
 def configure_bot():
+    if current_user['plan']==app.config["BLOCKED_PLAN"]:
+        return jsonify({ "error": "Account Blocked, Renew your subscription" }), 400
+
     bot_id = request.args.get('id')
     new_config = {
         'header_text': request.form.get('header_text'),
@@ -487,6 +497,9 @@ def configure_bot():
 @app.route('/editbot/sources/add', methods=['POST'])
 @jwt_required()
 def add_source_bot():
+    if current_user['plan']==app.config["BLOCKED_PLAN"]:
+        return jsonify({ "error": "Account Blocked, Renew your subscription" }), 400
+
     bot_id = request.args.get('id')
     raw_urls = request.form.get('urls').replace('\r','').split('\n')
     bot = db.bots.find_one(bot_id)
@@ -515,6 +528,9 @@ def add_source_bot():
 @app.route('/editbot/sources/addsitemap', methods=['POST'])
 @jwt_required()
 def add_sitemap_bot():
+    if current_user['plan']==app.config["BLOCKED_PLAN"]:
+        return jsonify({ "error": "Account Blocked, Renew your subscription" }), 400
+
     bot_id = request.args.get('id')
     sitemap_url = request.form.get('url')
     bot = db.bots.find_one(bot_id)
@@ -554,6 +570,9 @@ def add_sitemap_bot():
 @app.route('/editbot/sources/addsitemap/submit', methods=['GET'])
 @jwt_required()
 def add_submit_sitemap_bot():
+    if current_user['plan']==app.config["BLOCKED_PLAN"]:
+        return jsonify({ "error": "Account Blocked, Renew your subscription" }), 400
+
     bot_id = request.args.get('id')
     source_id = request.args.get('srcid')
     bot = db.bots.find_one(bot_id)
@@ -624,6 +643,11 @@ def start_chatbot():
         }
         db.chats.insert_one(chat)
     
+    # Reset Monthly Msg Counter
+    duration = datetime.utcnow() - bot['last_query_count_reset']
+    if duration.total_seconds() > (60*60*24*31):
+        db.bots.find_one_and_update({"_id": bot_id}, {'$set': {"query_count": 0, "last_query_count_reset": datetime.utcnow()}})
+    
     bot['config'].pop('base_prompt')
     response = jsonify({
         'qa_chain_id': chat['_id'],
@@ -646,6 +670,8 @@ def ask_chatbot():
     chat = db.chats.find_one({'_id':qa_chain_id})
     bot = db.bots.find_one({'_id':chat['bot_id']})
     owner = db.users.find_one({'_id':bot['owner']})
+    if owner['plan']==app.config["BLOCKED_PLAN"]:
+        return jsonify({ 'answer': app.config["BLOCKED_ERR_RESPONSE"], 'sources': [] })
     if bot["query_count"] > app.config['PLAN_DETAILS'][owner['plan']]['messages']:
         return jsonify({ 'answer': app.config["BOT_MSGS_ERR_RESPONSE"], 'sources': [] })
     if len(qn)>app.config["QUERY_LENGTH_LIMIT"]:
@@ -680,13 +706,24 @@ def cancel_customer_subscription():
     try: 
         subscription_id = current_user['stripe_subscription_id']
         if subscription_id:
-            cancel_subscription(subscription_id)
+            cancel_sub_block_acc(subscription_id)
             return jsonify(success=True), 200
         else:
-            return jsonify({ "error": "Cannot Cancel Default Plan" }), 401
+            return jsonify({ "error": "Cannot Cancel Subscription" }), 400
     except Exception as e:
         print(e)
         return jsonify({ "error": "Subscription Cancellation Failed" }), 500
+
+# Check Plan Compatibility
+def check_plan_compatibility(plan,user):
+    bot_nos = db.bots.count_documents({'owner':user['_id']})
+    if bot_nos > plan['bots']:
+        return ( False, f'This plan supports {plan["bots"]} chatbots only. You have {bot_nos} chatbots. Delete some chatbots to continue.' )
+    bots = db.bots.find({'owner':user['_id']})
+    for bot in bots:
+        if len(bot['sources']) > plan['sources']:
+            return ( False, f'This plan supports {plan["sources"]} source URLs per bot. {bot["name"]} has {len(bot["sources"])} source URLs. Delete some source URLs to continue.')
+    return ( True, 'Compatible' )
 
 # Stripe Endpoints
 
@@ -712,8 +749,13 @@ def get_publishable_key():
 @app.route("/stripe/create-checkout-session")
 @jwt_required()
 def create_checkout_session():
-    plan = request.args.get('plan')
-    price_id = app.config['PLAN_DETAILS'][plan]['price_id']
+    plan_name = request.args.get('plan')
+    plan = app.config['PLAN_DETAILS'][plan_name]
+    isCompatible, errorMsg = check_plan_compatibility(plan, current_user)
+    if not isCompatible:
+        return jsonify({ "error": errorMsg }), 400
+    
+    price_id = plan['price_id']
     try:
         checkout_session = stripe.checkout.Session.create(
             client_reference_id=current_user['_id'],
@@ -757,19 +799,21 @@ def stripe_webhook():
             # Fulfill the purchase...
             handle_checkout_session(expanded_session)
         
-        elif event['type'] == 'invoice.payment_failed':
-            # Retrieve the subscription and customer IDs from the event data
-            subscription_id = event["data"]["object"]['subscription']
-            # Cancel Subscription and Update database
-            cancel_subscription(subscription_id)
+        # elif event['type'] == 'invoice.payment_failed':
+        #     print("INVOICE PAYMENT FAILED")
+        #     # Retrieve the subscription and customer IDs from the event data
+        #     subscription_id = event["data"]["object"]['subscription']
+        #     # Cancel Subscription and Update database
+        #     cancel_sub_block_acc(subscription_id)
         
-        elif event['type'] == 'customer.subscription.updated':
-            # Retrieve the subscription and customer IDs from the event data
-            subscription_id = event["data"]["object"]['id']
-            subscription_status = event["data"]["object"]['status']
-            # If the subscription status is 'incomplete', the initial payment failed
-            if subscription_status == 'incomplete':
-                cancel_subscription(subscription_id)
+        # elif event['type'] == 'customer.subscription.updated':
+        #     # Retrieve the subscription and customer IDs from the event data
+        #     subscription_id = event["data"]["object"]['id']
+        #     subscription_status = event["data"]["object"]['status']
+        #     # If the subscription status is 'incomplete', the initial payment failed
+        #     if subscription_status == 'incomplete':
+        #         print("SUBSCRIPTION UPDATED INCOMPLETE")
+        #         cancel_sub_block_acc(subscription_id)
         
         return 'Success', 200
     
@@ -794,14 +838,12 @@ def handle_checkout_session(session):
     db.users.find_one_and_update({'_id':buyer_id}, {'$set': {'plan': plan, 'stripe_subscription_id':new_sub_id}})
     print("STRIPE SUBSCRIPTION SUCCESSFUL", buyer_id, plan)
 
-def cancel_subscription(subscription_id):
+def cancel_sub_block_acc(subscription_id):
     subscription = stripe.Subscription.retrieve(subscription_id)
     subscription.cancel()
-
-    default_plan = list(dict.fromkeys(app.config['PLAN_DETAILS']))[0]
-    db.users.find_one_and_update({'stripe_subscription_id':subscription_id}, {'$set':{'plan':default_plan, 'stripe_subscription_id':None}})
-
-    print("STRIPE SUBSCRIPTION CANCELLED", subscription_id)
+    blocked_plan = app.config["BLOCKED_PLAN"]
+    db.users.find_one_and_update({'stripe_subscription_id':subscription_id}, {'$set':{'plan':blocked_plan, 'stripe_subscription_id':None}})
+    print("STRIPE SUBSCRIPTION CANCELLED, ACCOUNT BLOCKED", subscription_id)
 
 
 if __name__ == "__main__":

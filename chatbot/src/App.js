@@ -96,7 +96,7 @@ function App() {
         messageParser={MessageParser}
         actionProvider= {(props) => <ActionProvider {...props} ask_url={`${base_url}/chat/ask?id=${data.qa_chain_id}`} show_sources={data.config.show_sources}/>}
       />
-      <a class="banner" href={base_url} target='blank'>Powered by <strong>GPTChatbot</strong></a>
+      <a class="banner" href={base_url} target='blank'>Powered by <strong>Elephant.ai</strong></a>
     </div>
     
     

@@ -97,10 +97,10 @@
         </div>
 
         <aside>
-          <img loading="lazy" src="/static/images/features/payroll.webp" alt="Payroll">
-          <img loading="lazy" src="/static/images/features/claims.webp" alt="Claim Expenses">
-          <img loading="lazy" src="/static/images/features/vat.webp" alt="VAT Handling">
-          <img loading="lazy" src="/static/images/features/reporting.webp" alt="Reporting">
+          <img loading="lazy" src="/static/images/features/1.png" alt="Payroll">
+          <img loading="lazy" src="/static/images/features/2.png" alt="Claim Expenses">
+          <img loading="lazy" src="/static/images/features/3.png" alt="VAT Handling">
+          <img loading="lazy" src="/static/images/features/4.png" alt="Reporting">
         </aside>
 
       <!-- #features --></section>
@@ -272,51 +272,22 @@
       <section id="pricing">
 
         <header>
-          <h2><span>Simple pricing,</span> for everyone</h2>
-          <p>
-            It doesn’t matter what size your business is, our software works well for you.
-          </p>
+          <h2><span>Pricing Plans</span> Pick your Pachyderm</h2>
+          <p id="subscribe_error" class="error error--hidden"></p>
         </header>
+        
 
-        <article>
-          <h3><span>Starter</span>&#8377;0<small> /month</small></h3>
-          <p>
-            Good for anyone who is self-employed and just getting started.
-          </p>
-          <a href="#register" class="action">Get Started</a>
-          <ul>
-            <li>Create 5 Chatbots</li>
-            <li>Unlimited Source URLs</li>
-            <li>Unlimited Requests</li>
-            
-          </ul>
-        </article>
-
-        <article class="featured">
-          <h3><span>Standard</span>&#8377;499<small> /month</small></h3>
-          <p>
-            Perfect for small / medium sized businesses.
-          </p>
-          <a href="#register" class="action">Get Started</a>
-          <ul>
-            <li>Create 20 Chatbots</li>
-            <li>Unlimited Source URLs</li>
-            <li>Unlimited Requests</li>
-          </ul>
-        </article>
-
-        <article>
-          <h3><span>Premium</span>&#8377;999<small> /month</small></h3>
-          <p>
-            For even the biggest enterpise companies.
-          </p>
-          <a href="#register" class="action">Get Started</a>
-          <ul>
-            <li>Create 50 Chatbots</li>
-            <li>Unlimited Source URLs</li>
-            <li>Unlimited Requests</li>
-          </ul>
-        </article>
+        {% for plan,detail in plan_details.items() %}
+          <article class="{% if loop.index0 % 2 == 1 %} featured {% endif %}">
+            <h3><span>{{plan}}</span>${{ "{:,.0f}".format(detail.price) }}<small> /month</small></h3>
+            <a href="#register" class="action">Get Started</a>
+            <ul>
+              <li>Create {{ "{:,.0f}".format(detail.bots) }} Chatbots</li>
+              <li>{{ "{:,.0f}".format(detail.sources) }} Source URLs per Chatbot</li>
+              <li>{{ "{:,.0f}".format(detail.messages // 1000) }}K Monthly Queries</li>
+            </ul>
+          </article>
+        {% endfor %}
 
       <!-- #pricing --></section>
     </div>

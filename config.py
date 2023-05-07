@@ -9,24 +9,24 @@ CHATBOT_STATIC_PATH = 'chatbot/build'
 CHATBOT_SCRIPT_FILE = 'chatbot.js'
 
 PLAN_DETAILS = {
-    'Plan1':{'bots':1, 'sources':5, 'messages':10000, 'price':0, 'price_id':'price_1N4q9cIqbPL5X1upGVnE3tNG'},
-    'Plan2':{'bots':20, 'sources':20, 'messages':20000, 'price':999, 'price_id':'price_1N4q7OIqbPL5X1upIspqntW2'},
-    'Plan3':{'bots':50, 'sources':50, 'messages':50000, 'price':1999, 'price_id':'price_1N4q7OIqbPL5X1upaKAZOSaJ'},
-    'Plan4':{'bots':100, 'sources':100, 'messages':100000, 'price':4999, 'price_id':'price_1N4q7OIqbPL5X1upFcwP8ZAL'},
-    'Plan5':{'bots':200, 'sources':200, 'messages':200000, 'price':9999, 'price_id':'price_1N4q7OIqbPL5X1upu5WC09EX'},
-    'Plan6':{'bots':500, 'sources':500, 'messages':500000, 'price':19999, 'price_id':'price_1N4q7OIqbPL5X1upPYf1hMVX'},
+    'Plan1':{'bots':10, 'sources':10, 'messages':10000, 'price':0, 'price_id':'price_1N4q9cIqbPL5X1upGVnE3tNG'},
+    'Plan2':{'bots':20, 'sources':20, 'messages':20000, 'price':49, 'price_id':'price_1N4q7OIqbPL5X1upIspqntW2'},
+    'Plan3':{'bots':50, 'sources':50, 'messages':50000, 'price':99, 'price_id':'price_1N4q7OIqbPL5X1upaKAZOSaJ'},
+    'Plan4':{'bots':100, 'sources':100, 'messages':100000, 'price':199, 'price_id':'price_1N4q7OIqbPL5X1upFcwP8ZAL'},
+    'Plan5':{'bots':200, 'sources':200, 'messages':200000, 'price':499, 'price_id':'price_1N4q7OIqbPL5X1upu5WC09EX'},
+    'Plan6':{'bots':500, 'sources':500, 'messages':500000, 'price':999, 'price_id':'price_1N4q7OIqbPL5X1upPYf1hMVX'},
 }
 PRICE_PLAN_MAP = { detail['price_id']: plan for plan,detail in PLAN_DETAILS.items() }
 BLOCKED_PLAN = "Blocked"
 
 QUERY_LENGTH_LIMIT = 500
-QUERY_WAIT_LIMIT = 10
+QUERY_WAIT_LIMIT = 5
 QUERY_LENGTH_ERR_RESPONSE = "That was too long. Try again."
 QUERY_WAIT_ERR_RESPONSE = "That was too fast. Slow down."
 BOT_MSGS_ERR_RESPONSE = "The monthly limit of messages for this bot is exceeded."
 BLOCKED_ERR_RESPONSE = "Account Blocked. Please renew your subscription."
 
-CHAT_RETAIN_TIME = 60*10
+CHAT_RETAIN_TIME = 60*60*24
 SOURCE_RETAIN_TIME = 60*60*6
 
 DEFAULT_BASE_PROMPT = """You are a helpful AI assistant. Use the following pieces of context to answer the question at the end.

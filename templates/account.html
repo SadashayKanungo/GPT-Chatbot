@@ -5,7 +5,7 @@
 <div id="top">
 
   <header>
-    <h1><a href="/" class="icon_logo"><i>{{ user['name'] }}</i></a></h1>
+    <h1><a href="/" class="icon_logo">Elephant<span>.ai</span></a></h1>
     <a href="#mainMenu" class="openMainMenu" hidden></a>
     <nav id="mainMenu">
       <a href="#" class="modalClose" hidden></a>
@@ -15,6 +15,7 @@
         <li><a href="#pricing">Subscribe</a></li>
         <li><a href="/dashboard">Dashboard</a></li>
         <li class="alternate featured"><a href="/user/signout">Sign Out</a></li>
+        <li class="alternate username">{{user.name}}</li>
       </ul>
     </nav>
   </header>
@@ -62,7 +63,7 @@
 
         {% for plan,detail in plan_details.items() %}
           <article class="{% if user['plan']==plan %} featured {% endif %}">
-            <h3><span>{{plan}}</span>&#8377;{{ "{:,.0f}".format(detail.price) }}<small> /month</small></h3>
+            <h3><span>{{plan}}</span>${{ "{:,.0f}".format(detail.price) }}<small> /month</small></h3>
             <p>
               Good for anyone who is self-employed and just getting started.
             </p>

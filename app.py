@@ -214,7 +214,7 @@ def login():
 @app.route('/')
 def home():
     is_signed_in = 'access_token_cookie' in request.cookies
-    return render_template('home.html', is_signed_in=is_signed_in)
+    return render_template('home.html', is_signed_in=is_signed_in, plan_details=app.config['PLAN_DETAILS'])
 
 @app.route('/dashboard/')
 @jwt_required()

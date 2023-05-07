@@ -5,7 +5,7 @@
 <div id="top">
 
   <header>
-    <h1><a href="/" class="icon_logo"><i>{{ user['name'] }}</i></a></h1>
+    <h1><a href="/" class="icon_logo">Elephant<span>.ai</span></a></h1>
     <a href="#mainMenu" class="openMainMenu" hidden></a>
     <nav id="mainMenu">
       <a href="#" class="modalClose" hidden></a>
@@ -13,6 +13,7 @@
         <li hidden><a href="#" class="modalClose">Exit Menu</a></li>
         <li><a href="/dashboard">Dashboard</a></li>
         <li class="alternate featured"><a href="/user/signout">Sign Out</a></li>
+        <li class="alternate username">{{user.name}}</li>
       </ul>
     </nav>
   </header>

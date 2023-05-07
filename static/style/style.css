@@ -181,6 +181,13 @@ h1 span {
 #mainMenu li.alternate {
 	float:right;
 }
+#mainMenu li.username {
+	height: 100%;
+	align-items: baseline;
+	text-decoration: underline;
+	font-weight: bold;
+	padding:0.5rem 0rem;
+}
 
 #mainMenu li a,
 .onPageLinks a {
@@ -621,6 +628,8 @@ main > div .action {
 	position:relative;
 	flex-grow:1;
 	width:10%;
+	padding:10px;
+	margin:5px;
 	min-width:min(100%, 3em);
 }
 

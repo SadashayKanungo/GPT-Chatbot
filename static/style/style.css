@@ -591,8 +591,9 @@ main > div .action {
 #features aside {
 	flex-shrink:1;
 	position:relative;
-	overflow:hidden;
+	overflow:visible;
 	grid-area:features_images;
+	padding:0;
 	background:var(--primeColor);
 	border:2em solid var(--primeColor);
 	border-radius:1rem 0 0 1rem;
@@ -604,15 +605,16 @@ main > div .action {
 	left:-200vw;
 	width:auto;
 	height:100%;
+	margin:0;
 	opacity:0;
+	border-radius:1rem 0 0 1rem;
 	transition:left 0s 0.5s, opacity 0.5s;
 }
 
-#features input:nth-of-type(1):checked ~ aside div:nth-of-type(1),
-#features input:nth-of-type(2):checked ~ aside div:nth-of-type(2),
-#features input:nth-of-type(3):checked ~ aside div:nth-of-type(3),
-#features input:nth-of-type(3):checked ~ aside div:nth-of-type(4),
-#features input:nth-of-type(4):checked ~ aside div:nth-of-type(5) {
+#features input:nth-of-type(1):checked ~ aside img:nth-of-type(1),
+#features input:nth-of-type(2):checked ~ aside img:nth-of-type(2),
+#features input:nth-of-type(3):checked ~ aside img:nth-of-type(3),
+#features input:nth-of-type(4):checked ~ aside img:nth-of-type(4) {
 	left:0;
 	opacity:1;
 	transition:opacity 0.5s;

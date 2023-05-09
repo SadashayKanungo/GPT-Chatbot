@@ -8,7 +8,7 @@ let has_been_opened = false
 const chatButton = document.createElement('div')
 // apply styles to the chat button
 chatButton.style.position = 'fixed'
-chatButton.style.bottom = '20px'
+chatButton.style.bottom = '100px'
 chatButton.style.right = '20px'
 chatButton.style.width = CHAT_BUTTON_SIZE + 'px'
 chatButton.style.height = CHAT_BUTTON_SIZE + 'px'
@@ -66,7 +66,7 @@ chat.id = 'iframe-container'
 chat.style.position = 'fixed'
 chat.style.flexDirection = 'column'
 chat.style.justifyContent = 'space-between'
-chat.style.bottom = '80px'
+chat.style.bottom = '160px'
 chat.style.width = '400px'
 chat.style.height = '500px'
 chat.style.boxShadow =

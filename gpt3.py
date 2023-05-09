@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import time
 import re
 import os
+import random
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 pinecone.init(
@@ -115,9 +116,10 @@ def extract_data_from(url):
         toc_counts[level - 1] += 1
         for i in range(level, len(toc_counts)):
             toc_counts[i] = 0
-
-        toc_number = '.'.join(str(x) for x in toc_counts[:level] if x > 0)
-        toc += f"{toc_number} {header.get_text(strip=True)}\n"
+        header_text = header.get_text(strip=True).replace('.', ' ')
+        toc_number = '-'.join(str(x) for x in toc_counts[:level] if x > 0)
+        toc += f"{toc_number} {header_text}\n"
+    toc += ". "
 
     try:
         raw_text = soup.get_text()
@@ -140,38 +142,65 @@ def extract_data_from(url):
         'text': text_with_toc,
     }
 
-def split_text(text, chunk_size, chunk_overlap, split_chars=None, length_function=len):
-    split_chars = split_chars or ["\n\n", "\n", " ", ""]
+# def split_text(text, chunk_size, overlap):
+#     sentences = re.split(r'(?<=[.!?]) +', text)
+#     chunks = []
+#     index = 0
+#     while index < len(sentences):
+#         chunk = sentences[index:index + chunk_size]
+#         chunks.append(' '.join(chunk))
+#         index += chunk_size - overlap
+#     return chunks
 
-    def recursive_split(text, split_char_index):
-        if split_char_index >= len(split_chars):
-            return [text]
+def split_sentence(sentence):
+    split_sentences = []
+    while len(sentence) > 250:
+        split_point = sentence.rfind(' ', 0, 250)
+        if split_point == -1:
+            split_point = 250
+        split_sentences.append(sentence[:split_point])
+        sentence = sentence[split_point:].lstrip()
+    split_sentences.append(sentence)
+    return split_sentences
 
-        split_char = split_chars[split_char_index]
-        segments = text.split(split_char)
+def split_text(text, max_chars, overlap):
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    sentences_limited = []
+    for sentence in sentences:
+        if len(sentence) >= 500:
+            sentence_parts = split_sentence(sentence)  
+            for part in sentence_parts:
+                sentences_limited.append(part)
+        else:
+            sentences_limited.append(sentence)
 
-        chunks = []
-        for segment in segments:
-            if length_function(segment) > chunk_size:
-                sub_chunks = recursive_split(segment, split_char_index + 1)
-                chunks.extend(sub_chunks)
-            else:
-                chunks.append(segment)
+    sentences = sentences_limited
 
-        result = []
-        index = 0
-        while index < len(chunks):
-            chunk = chunks[index]
-            next_index = index + 1
-            while next_index < len(chunks) and length_function(chunk + split_char + chunks[next_index]) <= chunk_size:
-                chunk += split_char + chunks[next_index]
-                next_index += 1
-            result.append(chunk)
-            index += max(1, next_index - index - chunk_overlap)
+    chunks = []
+    index = 0
 
-        return result
+    while index < len(sentences):
+        chunk = []
+        char_count = 0
+        added_sentences = 0
 
-    return recursive_split(text, 0)
+        while index < len(sentences) and char_count + len(sentences[index]) <= max_chars:
+            sentence = sentences[index]
+            chunk.append(sentence)
+            char_count += len(sentence) + 1  # Add 1 to account for the space between sentences
+            index += 1
+            added_sentences += 1
+
+        chunks.append(' '.join(chunk))
+
+        # Ensure proper overlap by moving the index back by the overlap value
+        if added_sentences > overlap:
+            index -= overlap
+        else:
+            # Make sure we always move forward, even when overlap >= added_sentences
+            index -= max(0, overlap - added_sentences)
+
+    return chunks
 
 # updated chunkify function
 def chunkify(data):
@@ -180,7 +209,7 @@ def chunkify(data):
         clean_text = post["text"].replace('\n', ' ')
         clean_text = re.sub(r' +', ' ', clean_text)
         clean_text = re.sub(r'^[ \t]*\n', '', clean_text, flags=re.MULTILINE)
-        text_chunks = split_text(clean_text, chunk_size=800, chunk_overlap=160)
+        text_chunks = split_text(clean_text, max_chars=1020, overlap=1)
 
         chunk_counter = 0
         for chunk in text_chunks:
@@ -197,6 +226,7 @@ def chunkify(data):
 def add_urls_to_namespace(url_list, namespace):
     data = []
     for url in url_list:
+        time.sleep(random.uniform(0.1, 0.2))
         data.append(extract_data_from(url))
     chunked_data = chunkify(data)
     
@@ -264,7 +294,7 @@ def get_source_documents(query, namespace):
         xq = res['data'][0]['embedding']
         top_k = 4
         pinecone_results = index.query(xq, top_k=top_k, namespace=namespace, include_metadata=True)
-        # print("Pinecone Matches", pinecone_results)
+        #print("Pinecone Matches", pinecone_results)
         contexts = [x['metadata']['text'] for x in pinecone_results['matches']]
         sources = [x['metadata']['url'] for x in pinecone_results['matches']]
         sources = list(dict.fromkeys(sources))
@@ -277,15 +307,15 @@ def get_answer(question, internal_messages, namespace, base_prompt):
             for message in internal_messages:
                 if message['role']!='system':
                     chat_history += f"{message['role'].capitalize()}: {message['content']}\n"
-            # print("Chat history: ",chat_history,"\n")
+            #print("Chat history: ",chat_history,"\n")
             condense_res = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
-                max_tokens=350,
+                max_tokens=2048,
                 temperature=0.1,
                 messages= [ASK_MESSAGE] + [{"role": "user", "content": CONDENSE_PROMPT.format(chat_history=chat_history, question=question)}]
             )
             standalone_question = condense_res["choices"][0]["message"]["content"]
-            # print("Standalone_question: ",standalone_question,"\n")
+            #print("Standalone_question: ",standalone_question,"\n")
             
         else:
             # If it's not a follow-up question, use the user_query directly
@@ -293,13 +323,15 @@ def get_answer(question, internal_messages, namespace, base_prompt):
 
         # Retrieve source documents
         source_documents, source_urls = get_source_documents(standalone_question, namespace)
-        # print("Context: "+"\n"+source_documents+"\n")
+        #print("Context: "+"\n"+"\n".join(source_documents)+"\n")
 
         internal_messages.append({"role": "user", "content": standalone_question})
 
         # Generate an answer using the QA_PROMPT and the retrieved context
         answer_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
+            max_tokens=2048,
+            temperature=0.5,
             messages = [ASK_MESSAGE] + [{"role": "user", "content": QA_PROMPT.format(context='\n'.join(source_documents), question=standalone_question, base_prompt=base_prompt)}]
         )
 

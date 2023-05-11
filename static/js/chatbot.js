@@ -19,14 +19,29 @@ chatButton.style.cursor = 'pointer'
 chatButton.style.zIndex = 999999998
 chatButton.style.transition = 'all .2s ease-in-out'
 
-
-
 chatButton.addEventListener('mouseenter', (event) => {
   chatButton.style.transform = 'scale(1.08)'
 })
 chatButton.addEventListener('mouseleave', (event) => {
   chatButton.style.transform = 'scale(1)'
 })
+
+const chatNotificationButton = document.createElement('div')
+// apply styles to the chat notification button
+chatNotificationButton.style.position = 'absolute',
+chatNotificationButton.id = 'notification-button',
+chatNotificationButton.style.top = '-5px',
+chatNotificationButton.style.right = '-5px',
+chatNotificationButton.style.backgroundColor = 'red',
+chatNotificationButton.style.color = 'white',
+chatNotificationButton.style.width = '20px',
+chatNotificationButton.style.height = '20px',
+chatNotificationButton.style.borderRadius = '50%',
+chatNotificationButton.style.textAlign = 'center',
+chatNotificationButton.style.lineHeight = '20px',
+chatNotificationButton.style.fontSize = '14px',
+chatNotificationButton.style.fontWeight = 'bold'
+chatNotificationButton.textContent = "1";
 
 // create the chat button icon element
 const chatButtonIcon = document.createElement('div')
@@ -40,7 +55,7 @@ chatButtonIcon.style.height = '100%'
 chatButtonIcon.style.zIndex = 999999999
 
 // add the chat button icon to the chat button element
-
+chatButton.appendChild(chatNotificationButton)
 chatButton.appendChild(chatButtonIcon)
 
 // add the chat button to the page
@@ -50,6 +65,7 @@ chatButton.addEventListener('click', () => {
   // toggle the chat component
   if (chat.style.display === 'none') {
     has_been_opened = true
+    chatNotificationButton.style.display = 'none',
     chat.style.display = 'flex'
 
     chatButtonIcon.innerHTML = getChatButtonCloseIcon()

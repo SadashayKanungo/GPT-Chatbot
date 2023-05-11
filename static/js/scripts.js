@@ -280,7 +280,7 @@ $("#source_submit_btn").click(function(e) {
   console.log(ifBotId);
   if (ifBotId==="None"){
     var submit_url = `/source/submit?id=${source_id}`;
-    var redirect_url = '/dashboard';
+    var redirect_url = '/creatingbot';
   } else{
     var submit_url = `/editbot/sources/addsitemap/submit?id=${ifBotId}&srcid=${source_id}`;
     var redirect_url = `/chatbot?id=${ifBotId}`;
@@ -297,14 +297,6 @@ $("#source_submit_btn").click(function(e) {
     error: function(resp) {
       $error.text(resp.responseJSON.error).removeClass("error--hidden");
     },
-    beforeSend: function () {
-      $("#source_submit_btn_text").addClass('loader--hidden');
-      $('#source_submit_btn_loader').removeClass('loader--hidden');
-    },
-    complete: function (response) {
-      $('#source_submit_btn_loader').addClass('loader--hidden');
-      $('#source_submit_btn_text').removeClass('loader--hidden');
-    }
   });
   e.preventDefault();
 });

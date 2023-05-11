@@ -8,6 +8,8 @@ from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 from datetime import datetime, timezone, timedelta
 from urllib.parse import urlparse
+from threading import Thread
+import asyncio
 import random
 import string
 import stripe
@@ -78,7 +80,9 @@ def signup():
         "token": None,
         "plan": list(dict.fromkeys(app.config['PLAN_DETAILS']))[0],
         "stripe_subscription_id": None,
-        "isVerified":False
+        "isVerified":False,
+        'query_count':0,
+        'last_query_count_reset': datetime.utcnow(),
     }
 
     # Encrypt the password
@@ -253,6 +257,13 @@ def serve(path):
     else:
         return send_from_directory(app.config['CHATBOT_STATIC_PATH'], 'index.html', as_attachment=False)
 
+@app.route("/creatingbot")
+def bot_creation():
+    return render_template("success.html", text=[
+        "Your chatbot is being created.",
+        "Check your Dashboard in a few minutes."
+    ], link="/dashboard", button_text="Back to Dashboard")
+
 # Bot Script Generation
 def get_script_response(bot_id, base_url):
     script_response = '<script src="CHATBOT_SCRIPT_URL" id="CHATBOT_ID"></script>'
@@ -402,6 +413,38 @@ def add_url_in_source():
     db.sources.find_one_and_update({'_id':source_id}, {'$set': {'urls': source['urls']}})
     return jsonify(success=True)
 
+
+async def create_bot(source, url):
+    with app.app_context():
+        print("DEBUG1 STARTED")
+        url_list = [url['url'] for url in source['selected']]
+        namespace = create_embeddings(url_list, source['domain_name'])
+        print("DEBUG2 NAMESPACE CREATED")
+        new_bot = {
+            '_id': uuid.uuid4().hex,
+            'name': source['bot_name'],
+            'sitemap_url': source['sitemap_url'],
+            'domain_name': source['domain_name'],
+            'namespace': namespace,
+            'owner': source['owner'],
+            'sources': url_list,
+            'config':{
+                'header_text':f'Conversation with {source["bot_name"]}',
+                'initial_messages':["Hi! How may I help you?"],
+                'accent_color': "#000000",
+                'base_prompt': app.config['DEFAULT_BASE_PROMPT'],
+                'show_sources': False,
+            },
+        }
+        new_bot['script'] = get_script_response(new_bot['_id'], url)
+        new_bot['iframe'] = get_iframe_response(new_bot['_id'], url)
+        db.bots.insert_one(new_bot)
+        print("DEBUG3 BOT CREATED")
+    return
+
+def start_create_bot(source,url):
+    asyncio.run(create_bot(source,url))
+
 @app.route('/source/submit', methods=['GET'])
 @jwt_required()
 def generate_new_bot():
@@ -419,35 +462,12 @@ def generate_new_bot():
     if not current_user['token'] or source['owner'] != current_user['_id']:
         return jsonify({ "error": "Not Authorized" }), 401
     
-    url_list = [url['url'] for url in source['selected']]
-    domain_name = source['domain_name']
     try:
-        namespace = create_embeddings(url_list, domain_name)
-        new_bot = {
-            '_id': uuid.uuid4().hex,
-            'name': source['bot_name'],
-            'sitemap_url': source['sitemap_url'],
-            'domain_name': source['domain_name'],
-            'namespace': namespace,
-            'owner': current_user['_id'],
-            'sources': url_list,
-            'config':{
-                'header_text':f'Conversation with {source["bot_name"]}',
-                'initial_messages':["Hi! How may I help you?"],
-                'accent_color': "#000000",
-                'base_prompt': app.config['DEFAULT_BASE_PROMPT'],
-                'show_sources': False,
-            },
-            'query_count':0,
-            'last_query_count_reset': datetime.utcnow(),
-        }
-        new_bot['script'] = get_script_response(new_bot['_id'], request.host_url)
-        new_bot['iframe'] = get_iframe_response(new_bot['_id'], request.host_url)
-        db.bots.insert_one(new_bot)
-        return jsonify(success=True)
+        Thread(target=start_create_bot, args=(source,request.host_url), daemon=True).start()
+        return jsonify(success=True), 200
     except Exception as e:
         print(e)
-        return jsonify({ "error": "Bot Creation Failed" }), 500
+        return jsonify({ "error": "Chatbot Creation Failed" }), 500
 
 
 # Editbot Routes
@@ -644,9 +664,10 @@ def start_chatbot():
         db.chats.insert_one(chat)
     
     # Reset Monthly Msg Counter
-    duration = datetime.utcnow() - bot['last_query_count_reset']
+    owner = db.users.find_one({'_id':bot['owner']})
+    duration = datetime.utcnow() - owner['last_query_count_reset']
     if duration.total_seconds() > (60*60*24*31):
-        db.bots.find_one_and_update({"_id": bot_id}, {'$set': {"query_count": 0, "last_query_count_reset": datetime.utcnow()}})
+        db.users.find_one_and_update({"_id": bot['owner']}, {'$set': {"query_count": 0, "last_query_count_reset": datetime.utcnow()}})
     
     bot['config'].pop('base_prompt')
     response = jsonify({
@@ -672,7 +693,7 @@ def ask_chatbot():
     owner = db.users.find_one({'_id':bot['owner']})
     if owner['plan']==app.config["BLOCKED_PLAN"]:
         return jsonify({ 'answer': app.config["BLOCKED_ERR_RESPONSE"], 'sources': [] })
-    if bot["query_count"] > app.config['PLAN_DETAILS'][owner['plan']]['messages']:
+    if owner["query_count"] > app.config['PLAN_DETAILS'][owner['plan']]['messages']:
         return jsonify({ 'answer': app.config["BOT_MSGS_ERR_RESPONSE"], 'sources': [] })
     if len(qn)>app.config["QUERY_LENGTH_LIMIT"]:
         return jsonify({ 'answer': app.config["QUERY_LENGTH_ERR_RESPONSE"], 'sources': [] })
@@ -680,7 +701,7 @@ def ask_chatbot():
         return jsonify({ 'answer': app.config["QUERY_WAIT_ERR_RESPONSE"], 'sources': [] })
     ans = get_answer(qn, chat['internal_messages'], bot['namespace'], bot['config']['base_prompt'])
     updated_messages = chat['messages'] + [{"role":"user", "content":qn}, {"role":"assisstant", "content":ans['answer']}]
-    db.bots.find_one_and_update({'_id':bot['_id']},{'$inc':{'query_count':1}})
+    db.users.find_one_and_update({'_id':owner['_id']},{'$inc':{'query_count':1}})
     db.chats.find_one_and_update({'_id':qa_chain_id}, {'$set': {
         'messages': updated_messages,
         'internal_messages': ans['internal_messages'],

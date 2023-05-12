@@ -711,7 +711,7 @@ def ask_chatbot():
     response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"], secure=True, httponly=True, samesite='None')
     return response
 
-# Accent Color Endpoint
+# Misc Endpoints
 @app.route('/accentcolor', methods=['GET'])
 def accent_color():
     bot_id = request.args.get('id')
@@ -719,6 +719,12 @@ def accent_color():
     if not bot:
         return jsonify({ "error": "Bot Not Found" }), 404
     return jsonify(accent_color=bot['config']['accent_color'])
+
+@app.route('/defaultbaseprompt', methods=['GET'])
+def default_base_prompt():
+    return jsonify({
+        'base_prompt': app.config['DEFAULT_BASE_PROMPT']
+    }), 200
 
 # Cancel Subscription
 @app.route('/cancelsubscription', methods=['GET'])

@@ -75,15 +75,18 @@
         <div class="tab">
           <section>
             <form class="onPageForm"  name="bot_config_form" data-id="{{bot['_id']}}">
-              <p class="error error--hidden center_error"></p>
+              <p id="settings_error" class="error error--hidden center_error"></p>
               <fieldset>
                 <input type="hidden" name="csrf_token" value={{csrf_token}}>
                 <label>Header Text: </label>
                 <input type="text" name="header_text" value="{{bot.config.header_text}}"/>
                 <label>Initial Messages (New Line separated):</label>
                 <textarea name="initial_messages" rows="3">{% for msg in bot.config.initial_messages %}{{msg}}{% if loop.index0 < bot.config.initial_messages|length - 1 %}&#13;&#10;{% endif %}{% endfor %}</textarea>
+                <span class="settings-row">
                 <label>Base Prompt (Passed to GPT Model):</label>
-                <textarea class="wider-textarea" name="base_prompt" rows="4">{{bot.config.base_prompt}}</textarea>
+                <button type="button" id="base_prompt_reset">Reset</button>
+                </span>
+                <textarea id="base_prompt_textarea" class="wider-textarea" name="base_prompt" rows="4">{{bot.config.base_prompt}}</textarea>
                 <span class="settings-row">
                   <label>
                     Accent Color : 

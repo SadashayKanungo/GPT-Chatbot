@@ -378,6 +378,27 @@ $("button.source_action").click(function(e){
   e.preventDefault();
 });
 
+$("#base_prompt_reset").click(function(e){
+  var $textarea = $("#base_prompt_textarea");
+  var $error = $('#settings_error');
+  // Perform AJAX call
+  $.ajax({
+    url: `/defaultbaseprompt`, // URL of the API endpoint
+    type: "GET", // HTTP method
+    success: function(data) {
+      // Redirect to a new page on successful API call
+      $textarea.val(data.base_prompt);
+    },
+    error: function(resp) {
+      $error.text("Could Not Load Default Base Prompt").removeClass("error--hidden");
+      setTimeout(()=>{
+        $error.text("").addClass("error--hidden");
+      }, 5000);
+    }
+  });
+  e.preventDefault();
+});
+
 $("button.bot_src_del").click(function(e){
   var $btn = $(this);
   var id = $btn.attr('data-id');

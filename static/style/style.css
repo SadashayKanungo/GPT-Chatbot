@@ -1170,12 +1170,18 @@ form.onPageForm footer button:hover {
 	flex-direction: row;
 	width:50%;
 	margin:auto;
-	justify-content: space-around;
+	justify-content:space-between;
 }
 .onPageForm input[type=checkbox]{
 	width:25px;
 	height:25px;
-	margin: 10px;
+	margin:10px;
+}
+
+.onPageForm #base_prompt_reset{
+	border-radius: 1.5em;
+	align-items: baseline;
+	padding: 0px 10px;
 }
 
 /*======================================================================================================*/

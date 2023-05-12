@@ -73,6 +73,7 @@ body, button, input, table, textarea, select {
 body {
 	background:var(--primeColor);
 	color:var(--flowColor);
+	overflow-x:hidden;
 }
 
 input:focus,
@@ -106,8 +107,6 @@ button:focus {
 .icon_github:before { content:"\E80B"; }
 #pricing li:before { content:"\E80C"; }
 .openMainMenu:before { content:"\E80D"; }
-.modalClose.icon_logo:after { content:"\E80E"; }
-.icon_logo:before { content:"\E80F"; }
 
 #top {
 	scroll-behavior:smooth;
@@ -116,7 +115,8 @@ button:focus {
 	left:0;
 	width:100%;
 	height:100%;
-	overflow:auto;
+	overflow-y:auto;
+	overflow-x: hidden;
 }
 
 #top > header,
@@ -149,6 +149,25 @@ main > div {
 .socialLinks a {
 	text-decoration:none;
 	color:var(--flowColor);
+}
+
+.logo_container{
+	display:flex;
+	align-items: center;
+	justify-content: start;
+}
+.logo_container a{
+	color: var(--flowColor);
+	font-weight: bold;
+}
+.logo_footer{
+	justify-content: center;
+}
+img.logo{
+	display:inline-block;
+	width:2.5em;
+	height:2.5em;
+	margin:5px;
 }
 
 h1,

@@ -127,7 +127,7 @@ $("form[name=newbot_form").submit(function(e) {
     data: data,
     dataType: "json",
     success: function(resp) {
-      console.log(resp);
+      // console.log(resp);
       // access_token = access_token + resp.access_token
       window.location.href = `/source?id=${resp.id}`;
     },
@@ -223,7 +223,7 @@ $("form[name=bot_sitemap_form").submit(function(e) {
     data: data,
     dataType: "json",
     success: function(resp) {
-      console.log(resp);
+      // console.log(resp);
       window.location.href = `/source?id=${resp.id}`;
     },
     error: function(resp) {
@@ -277,7 +277,7 @@ $("#source_submit_btn").click(function(e) {
   var $btn = $(this);
   var source_id = $btn.attr("data-id");
   var ifBotId = $btn.attr("data-botId");
-  console.log(ifBotId);
+  // console.log(ifBotId);
   if (ifBotId==="None"){
     var submit_url = `/source/submit?id=${source_id}`;
     var redirect_url = '/creatingbot';
@@ -443,3 +443,11 @@ document.getElementById("iframe-box").addEventListener("click", function() {
     tooltip.textContent = "Click to copy";
   }, 2000);
 });
+
+// Settings Input
+function updateSliderValue(val) {
+  document.getElementById('slider_val').innerText=val; 
+}
+function updateSideValue(val) {
+  document.getElementById('side_val').innerText= val ? "Right" : "Left"; 
+}

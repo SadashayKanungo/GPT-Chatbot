@@ -8,7 +8,7 @@ let has_been_opened = false
 const chatButton = document.createElement('div')
 // apply styles to the chat button
 chatButton.style.position = 'fixed'
-chatButton.style.bottom = '100px'
+chatButton.style.bottom = '20px'
 chatButton.style.right = '20px'
 chatButton.style.width = CHAT_BUTTON_SIZE + 'px'
 chatButton.style.height = CHAT_BUTTON_SIZE + 'px'
@@ -82,7 +82,7 @@ chat.id = 'iframe-container'
 chat.style.position = 'fixed'
 chat.style.flexDirection = 'column'
 chat.style.justifyContent = 'space-between'
-chat.style.bottom = '160px'
+chat.style.bottom = '80px'
 chat.style.width = '400px'
 chat.style.height = '500px'
 chat.style.boxShadow =
@@ -95,51 +95,6 @@ chat.style.overflow = 'hidden'
 
 document.body.appendChild(chat)
 
-/////////////////////////////////////////// Checking for Overlaps ////////////////////////////////////
-
-// // Check for overlaps between the chatbot button and a single element
-// function checkOverlap(element) {
-//   if (element == chatButton) return;
-//   const elementZIndex = parseInt(window.getComputedStyle(element).getPropertyValue('z-index'), 10);
-//   if (elementZIndex < chatButton.style.zIndex) return;
-//   if (typeof element.getBoundingClientRect !== 'function') return;
-
-//   console.log("Checking Overlap");
-//   const elementRect = element.getBoundingClientRect();
-//   const buttonRect = chatButton.getBoundingClientRect();
-
-//   // Check if the element has a higher z-index and is partially overlapping with the chatbot button
-//   if (
-//       elementRect.bottom > buttonRect.top &&
-//       elementRect.top < buttonRect.bottom &&
-//       elementRect.right > buttonRect.left &&
-//       elementRect.left < buttonRect.right
-//       ) {
-//       // Found Overlap
-//       // console.log(element.innerHTML);
-//       // Adjust the position of the chatbot button
-//       const elementHeight = elementRect.height;
-//       const buttonHeight = buttonRect.height;
-//       const newPosition = elementHeight + buttonHeight + 20; // add a little padding
-
-//       chatButton.style.bottom = `${newPosition}px`;
-//       chat.style.bottom = `${newPosition + 60}px`;
-//   }
-// }
-
-// // Check for overlaps when the page is first loaded
-// Array.from(document.getElementsByTagName('*')).forEach((element) => {
-//   checkOverlap(element);
-// });
-
-// // Check for overlaps whenever a new element is added to the DOM
-// document.addEventListener('DOMNodeInserted', (event) => {
-//   // Check for overlaps between the chatbot button and the new element
-//   const newElement = event.target;
-//   checkOverlap(newElement);
-// });
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const getChatbot = async () => {
   ////////////////////////////////////////// NEW STUFF //////////////////////////////////////////
@@ -147,16 +102,24 @@ const getChatbot = async () => {
   var l = document.createElement('a');
   l.href = document.currentScript.src;
 
-  const accent_color_url = `${l.protocol}//${l.host}/accentcolor?id=${bot_id}`;
+  const accent_color_url = `${l.protocol}//${l.host}/chatconfig?id=${bot_id}`;
   const response = await fetch(accent_color_url);
   const data = await response.json();
-  if(data.accent_color)  CHAT_BUTTON_BACKGROUND_COLOR = data.accent_color;
-
+  CHAT_BUTTON_BACKGROUND_COLOR = data.accent_color;
   chatButton.style.backgroundColor = CHAT_BUTTON_BACKGROUND_COLOR
-  chatButton.style.right = '20px'
-  chatButton.style.left = 'unset'
-  chat.style.right = '20px'
-  chat.style.left = 'unset'
+  chatButton.style.bottom = `${data.margin_bottom}px`;
+  chat.style.bottom = `${data.margin_bottom + 60}px`;
+  if(data.right_side){
+    chatButton.style.right = '20px'
+    chatButton.style.left = 'unset'
+    chat.style.right = '20px'
+    chat.style.left = 'unset'
+  } else {
+    chatButton.style.left = '20px'
+    chatButton.style.right = 'unset'
+    chat.style.left = '20px'
+    chat.style.right = 'unset'
+  }
 
   ICON_COLOR = getContrastingTextColor(CHAT_BUTTON_BACKGROUND_COLOR)
   chatButtonIcon.innerHTML = getChatButtonIcon()

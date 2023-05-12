@@ -97,6 +97,16 @@
                     Show Sources
                   </label>
                 </span>
+                <span class="settings-row">
+                  <label>
+                    Margin from Bottom : <strong><span id="slider_val">{{bot.config.margin_bottom}}</span></strong> Pixels.
+                    <input type="range" name="margin_bottom" min="20" max="200" step="10" value="{{bot.config.margin_bottom}}" oninput="updateSliderValue(this.value);">
+                  </label>
+                  <label>
+                    <input type="checkbox" name="right_side" value="true" {% if bot.config.right_side %} checked {% endif %} oninput="updateSideValue(this.checked);">
+                    <strong><span id="side_val">{% if bot.config.right_side %} Right {% else %} Left {% endif %}</span></strong> side of screen.
+                  </label>
+                </span>
               </fieldset>
               <footer>
                 <button type="submit">Update</button>
@@ -237,7 +247,6 @@
     function displayUrls() {
       const startIndex = (currentPage - 1) * urlsPerPage;
       const endIndex = startIndex + urlsPerPage;
-      console.log(startIndex, endIndex);
       const urlsToDisplay = urlList.slice(startIndex, endIndex);
 
       let tableContent = `<tr> <th id="select-all-label">Select All</th> <th><input type="checkbox" id="select-all"></th> </tr>`;

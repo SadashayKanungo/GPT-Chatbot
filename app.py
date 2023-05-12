@@ -416,10 +416,8 @@ def add_url_in_source():
 
 async def create_bot(source, url):
     with app.app_context():
-        print("DEBUG1 STARTED")
         url_list = [url['url'] for url in source['selected']]
         namespace = create_embeddings(url_list, source['domain_name'])
-        print("DEBUG2 NAMESPACE CREATED")
         new_bot = {
             '_id': uuid.uuid4().hex,
             'name': source['bot_name'],
@@ -434,12 +432,13 @@ async def create_bot(source, url):
                 'accent_color': "#000000",
                 'base_prompt': app.config['DEFAULT_BASE_PROMPT'],
                 'show_sources': False,
+                'margin_bottom': 20,
+                'right_side': True,
             },
         }
         new_bot['script'] = get_script_response(new_bot['_id'], url)
         new_bot['iframe'] = get_iframe_response(new_bot['_id'], url)
         db.bots.insert_one(new_bot)
-        print("DEBUG3 BOT CREATED")
     return
 
 def start_create_bot(source,url):
@@ -501,6 +500,8 @@ def configure_bot():
         'initial_messages':request.form.get('initial_messages').replace('\r','').split('\n'),
         'base_prompt':request.form.get('base_prompt'),
         'show_sources': request.form.get('show_sources')=="true",
+        'margin_bottom': int(request.form.get('margin_bottom')),
+        'right_side': request.form.get('right_side')=="true",
     }
     
     bot = db.bots.find_one(bot_id)
@@ -712,13 +713,17 @@ def ask_chatbot():
     return response
 
 # Misc Endpoints
-@app.route('/accentcolor', methods=['GET'])
+@app.route('/chatconfig', methods=['GET'])
 def accent_color():
     bot_id = request.args.get('id')
     bot = db.bots.find_one(bot_id)
     if not bot:
         return jsonify({ "error": "Bot Not Found" }), 404
-    return jsonify(accent_color=bot['config']['accent_color'])
+    return jsonify({
+        'accent_color': bot['config']['accent_color'],
+        'margin_bottom': bot['config']['margin_bottom'],
+        'right_side': bot['config']['right_side'],
+    })
 
 @app.route('/defaultbaseprompt', methods=['GET'])
 def default_base_prompt():

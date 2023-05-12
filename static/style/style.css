@@ -703,6 +703,10 @@ main > div .action {
 	left:-400%;
 }
 
+.tab{
+	min-width: 350px;
+}
+
 .tab p{
 	margin-top:20px;
 	padding:10px;
@@ -1182,6 +1186,17 @@ form.onPageForm footer button:hover {
 	border-radius: 1.5em;
 	align-items: baseline;
 	padding: 0px 10px;
+	height: fit-content;
+}
+
+
+.onPageForm #slider_val{
+	display: inline-block;
+	width:40px;
+}
+.onPageForm #side_val{
+	display: inline-block;
+	width:60px;
 }
 
 /*======================================================================================================*/

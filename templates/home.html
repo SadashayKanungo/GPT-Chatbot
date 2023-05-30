@@ -287,7 +287,13 @@
             <ul>
               <li>Create {{ "{:,.0f}".format(detail.bots) }} Chatbots</li>
               <li>{{ "{:,.0f}".format(detail.sources) }} Source URLs per Chatbot</li>
-              <li>{{ "{:,.0f}".format(detail.messages // 1000) }}K Monthly Queries</li>
+              <li>
+                {% if detail.messages >= 1000 %}
+                  {{ "{:,.0f}".format(detail.messages // 1000) }}K Monthly Queries
+                {% else %}
+                  {{ "{:,.0f}".format(detail.messages) }} Monthly Queries
+                {% endif %}
+              </li>
             </ul>
           </article>
         {% endfor %}

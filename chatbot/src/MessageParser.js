@@ -3,6 +3,7 @@ import React from 'react';
 
 const MessageParser = ({ children, actions }) => {
   const parse = (message) => {
+    if(message.trim().length === 0) return;
     actions.handleQuery(message);
   };
 

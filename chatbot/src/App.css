@@ -54,8 +54,9 @@
 
 /******************** Header ********************/
 .react-chatbot-kit-chat-header {
+  display:flex;
+  flex-direction: row;
   font-size: 1em;
-  justify-content: center;
   background-color: var(--accentColor);
   color: var(--accentTextColor);
   height: 20px;
@@ -63,6 +64,18 @@
 .react-chatbot-kit-chat-header #chatbot-loader #chatbot-loader-dot1,#chatbot-loader-dot2,#chatbot-loader-dot3 {
   stroke: var(--accentTextColor);
   fill: var(--accentTextColor);
+}
+.clear-btn{
+  border:none;
+  border-radius: 999px;
+  font-size: 1em;
+  color: var(--accentTextColor);
+  background-color: var(--accentColor);
+  margin-left: auto;
+}
+.clear-btn:hover{
+  background-color: var(--accentTextColor);
+  color: var(--accentColor);
 }
 
 /******************** Avatar ********************/

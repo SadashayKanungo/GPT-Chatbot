@@ -10,12 +10,12 @@ import MyBotAvator from './Components/MyBotAvator';
 import MessageParser from './MessageParser.js';
 import ActionProvider from './ActionProvider.js';
 
-// const urlParams = new URLSearchParams(window.location.search);
-// const bot_id = urlParams.get('id');
-// const base_url = `${window.location.protocol}//${window.location.host}`;
+const urlParams = new URLSearchParams(window.location.search);
+const bot_id = urlParams.get('id');
+const base_url = `${window.location.protocol}//${window.location.host}`;
 
-const bot_id = "9aea670e6ecf4bca8c3eb94e1bd76605";
-const base_url = `http://localhost:5000`;
+// const bot_id = "9aea670e6ecf4bca8c3eb94e1bd76605";
+// const base_url = `http://localhost:5000`;
 
 function App() {
   const [data, setData] = useState({qa_chain_id:null, messages:null});

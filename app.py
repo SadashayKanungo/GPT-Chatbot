@@ -712,6 +712,17 @@ def ask_chatbot():
     response.set_cookie('gptchatbot_cookie', chat['_id'], max_age=app.config["CHAT_RETAIN_TIME"], secure=True, httponly=True, samesite='None')
     return response
 
+@app.route('/chat/refresh', methods=['GET'])
+def refresh_chatbot():
+    cookie_value = request.cookies.get('gptchatbot_cookie')
+    print(cookie_value)
+    if not cookie_value:
+        return jsonify({ "error": "Chat Not Found" }), 404
+    
+    response = jsonify(success=True)
+    response.delete_cookie('gptchatbot_cookie')
+    return response
+
 # Misc Endpoints
 @app.route('/chatconfig', methods=['GET'])
 def accent_color():

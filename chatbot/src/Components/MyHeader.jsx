@@ -1,16 +1,19 @@
 import React from "react";
+import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRefresh } from '@fortawesome/free-solid-svg-icons'
 
-function clearCookieAndReload() {
-  console.log("refresh");
-  // Set the cookie's expiration date in the past to delete it
-  document.cookie = "gptchatbot_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-  // Reload the page
-  window.location.reload();
-}
+const MyHeader = ({text, base_url}) => {
+  function clearCookieAndReload() {
+    console.log("refresh");
+    axios.get(`${base_url}/chat/refresh`)
+    .then(response => {
+      window.location.reload();
+    }).catch(err => {
+      console.log(err);
+    });
+  }
 
-const MyHeader = ({text}) => {
   return(
     <>
     <div className="react-chatbot-kit-chat-header" id="loader">

@@ -431,7 +431,7 @@ async def create_bot(source, url):
                 'initial_messages':["Hi! How may I help you?"],
                 'accent_color': "#000000",
                 'base_prompt': app.config['DEFAULT_BASE_PROMPT'],
-                'show_sources': False,
+                'show_sources': True,
                 'margin_bottom': 20,
                 'right_side': True,
             },

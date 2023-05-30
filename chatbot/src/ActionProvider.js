@@ -18,7 +18,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children, ask_url, sho
       if(show_sources && data.sources.length){
         const botMessageSrc = createChatBotMessage(
           <span class="sources"> Sources: 
-            {data.sources.map((src,i) => <a href={src} target='blank'>{i+1}</a>)}
+            {data.sources.map((src,i) => <a href={src} target='_blank'>{i+1}</a>)}
           </span>
         );
         setState((prev) => ({

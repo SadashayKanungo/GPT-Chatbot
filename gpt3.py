@@ -33,23 +33,49 @@ max_chunks_per_post = 100
 ###################################################################################################################
 
 def get_urls_from_sitemap(sitemap_url, domain_name):
+    sitemap_domain = urlparse(sitemap_url).netloc
     headers = {
-        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-        'From': 'googlebot(at)googlebot.com',
+            "authority": f"{sitemap_domain}",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+            "referer": "https://google.com/",
+            "sec-ch-ua": "\"Google Chrome\";v=\"111\", \"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"111\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"macOS\"",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-user": "?1",
+            "upgrade-insecure-requests": "1",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"
         }
+    IGNORED_EXTENSIONS = set([
+    ".jpg", ".jpeg", ".png", ".gif", ".bmp", 
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", 
+    ".ppt", ".pptx", ".zip", ".rar", ".7z", 
+    ".exe", ".dmg", ".iso", ".tar", ".gz",
+    ".csv"
+    ])
     
-    def normalize_url(url):
-        return url if url.endswith('/') else url + '/'
+    def is_file_link(url):
+        parsed = urlparse(url)
+        base, ext = os.path.splitext(parsed.path)
+        return ext.lower() in IGNORED_EXTENSIONS
 
+    def normalize_url(url):
+        if not is_file_link(url):
+            return url
+        return None
+    
     def extract_links_from_xml(content):
         soup = BeautifulSoup(content, "lxml-xml")
-        urls = [normalize_url(loc.string) for loc in soup.select("urlset url loc")]
-        sitemap_links = [normalize_url(sitemap_loc.string) for sitemap_loc in soup.select("sitemapindex sitemap loc")]
+        urls = [normalize_url(loc.string) for loc in soup.select("urlset url loc") if normalize_url(loc.string)]
+        sitemap_links = [normalize_url(sitemap_loc.string) for sitemap_loc in soup.select("sitemapindex sitemap loc") if normalize_url(sitemap_loc.string)]
         return urls, sitemap_links
 
     def extract_links_from_html(content):
         soup = BeautifulSoup(content, "html.parser")
-        urls = [normalize_url(urljoin(sitemap_url, link.get("href"))) for link in soup.find_all("a")]
+        urls = [normalize_url(urljoin(sitemap_url, link.get("href"))) for link in soup.find_all("a") if normalize_url(urljoin(sitemap_url, link.get("href")))]
         return urls
 
     def is_xml(content):
@@ -94,10 +120,24 @@ def get_urls_from_sitemap(sitemap_url, domain_name):
 ###################################################################################################################
 
 def extract_data_from(url):
+    sitemap_domain = urlparse(url).netloc
+    headers = {
+            "authority": f"{sitemap_domain}",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+            "referer": "https://google.com/",
+            "sec-ch-ua": "\"Google Chrome\";v=\"111\", \"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"111\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"macOS\"",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-user": "?1",
+            "upgrade-insecure-requests": "1",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"
+        }
     try:
-        html = requests.get(url, headers={
-            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"
-        }).text
+        html = requests.get(url, headers=headers).text
     except requests.exceptions.RequestException as e:
         return {
             'error': f"Failed to fetch the URL: {e}"

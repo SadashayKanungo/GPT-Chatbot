@@ -9,7 +9,7 @@ CHATBOT_STATIC_PATH = 'chatbot/build'
 CHATBOT_SCRIPT_FILE = 'chatbot.js'
 
 PLAN_DETAILS = {
-    'Plan1':{'bots':1, 'sources':5, 'messages':100, 'price':0, 'price_id':'price_1N4q9cIqbPL5X1upGVnE3tNG'},
+    'Plan1':{'bots':1, 'sources':5, 'messages':1000, 'price':0, 'price_id':'price_1N4q9cIqbPL5X1upGVnE3tNG'},
     'Plan2':{'bots':3, 'sources':100, 'messages':10000, 'price':49, 'price_id':'price_1N4q7OIqbPL5X1upIspqntW2'},
     'Plan3':{'bots':5, 'sources':300, 'messages':25000, 'price':99, 'price_id':'price_1N4q7OIqbPL5X1upaKAZOSaJ'},
     'Plan4':{'bots':10, 'sources':500, 'messages':50000, 'price':199, 'price_id':'price_1N4q7OIqbPL5X1upFcwP8ZAL'},
